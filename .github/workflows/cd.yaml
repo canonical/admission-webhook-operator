@@ -28,7 +28,7 @@ jobs:
         IMAGE_TAG="vmaster-gaf96e4e3"
         charmcraft build
         docker pull gcr.io/kubeflow-images-public/admission-webhook:$IMAGE_TAG
-        charm push ./minio.charm \
+        charm push ./admission-webhook.charm \
             cs:~kubeflow-charmers/admission-webhook \
             --resource oci-image=gcr.io/kubeflow-images-public/admission-webhook:$IMAGE_TAG
 

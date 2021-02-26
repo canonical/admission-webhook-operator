@@ -47,7 +47,7 @@ jobs:
         sg microk8s -c 'juju bootstrap microk8s uk8s'
         juju add-model admission-webhook
 
-    - name: Deploy MinIO
+    - name: Deploy admission-webhook
       run: |
         set -eux
         charmcraft build
@@ -64,11 +64,11 @@ jobs:
       run: juju status
       if: failure()
 
-    - name: Get minio logs
-      run: kubectl logs --tail 100 -nminio -ljuju-app=minio
+    - name: Get admission-webhook logs
+      run: kubectl logs --tail 100 -nadmission-webhook -ljuju-app=admission-webhook
       if: failure()
 
-    - name: Get minio operator logs
-      run: kubectl logs --tail 100 -nminio -ljuju-operator=minio
+    - name: Get admission-webhook operator logs
+      run: kubectl logs --tail 100 -nadmission-webhook -ljuju-operator=admission-webhook
       if: failure()
 
