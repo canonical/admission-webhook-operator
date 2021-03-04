@@ -255,7 +255,17 @@ class AdmissionWebhookCharm(CharmBase):
                                                 "values": ["admission-webhook"],
                                             },
                                             {
+                                                "key": "app.kubernetes.io/name",
+                                                "operator": "NotIn",
+                                                "values": ["admission-webhook"],
+                                            },
+                                            {
                                                 "key": "juju-operator",
+                                                "operator": "NotIn",
+                                                "values": ["admission-webhook"],
+                                            },
+                                            {
+                                                "key": "operator.juju.is/name",
                                                 "operator": "NotIn",
                                                 "values": ["admission-webhook"],
                                             },
