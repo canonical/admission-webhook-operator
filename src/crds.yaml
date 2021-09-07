@@ -26,6 +26,8 @@ spec:
               type: string
             serviceAccountName:
               type: string
+            automountServiceAccountToken:
+              type: boolean
             env:
               items:
                 type: object
@@ -45,7 +47,7 @@ spec:
                 type: object
               type: array
           required:
-          - selector
+            - selector
           type: object
         status:
           type: object
