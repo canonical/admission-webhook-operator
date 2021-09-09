@@ -51,8 +51,8 @@ jobs:
       run: |
         set -eux
         sg lxd -c "charmcraft build"
-        juju deploy ./admission-webhook.charm \
-          --resource oci-image=gcr.io/kubeflow-images-public/admission-webhook:vmaster-gaf96e4e3
+        juju deploy ./admission-webhook*.charm \
+          --resource oci-image=$(yq eval '.resources.oci-image.upstream-source' metadata.yaml)
         juju wait -wvt 300
         juju status
 
