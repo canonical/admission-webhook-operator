@@ -7,7 +7,7 @@ on:
 
 jobs:
   charm:
-    name: Charm
+    name: Publish Charm
     runs-on: ubuntu-latest
 
     steps:
@@ -18,18 +18,19 @@ jobs:
       run: |
         sudo snap install charm --classic
         sudo pip3 install charmcraft
+        sudo snap install yq
 
-    - name: Publish bundle
+    - name: Publish
       env:
         CHARMSTORE_CREDENTIAL: ${{ secrets.CHARMSTORE_CREDENTIAL }}
       run: |
         set -eux
         echo $CHARMSTORE_CREDENTIAL > ~/.go-cookies
-        IMAGE_TAG="vmaster-gaf96e4e3"
+        IMAGE=$(yq eval '.resources.oci-image.upstream-source' metadata.yaml)
         charmcraft build
-        docker pull gcr.io/kubeflow-images-public/admission-webhook:$IMAGE_TAG
+        docker pull $IMAGE
         charm push ./admission-webhook.charm \
             cs:~kubeflow-charmers/admission-webhook \
-            --resource oci-image=gcr.io/kubeflow-images-public/admission-webhook:$IMAGE_TAG
+            --resource oci-image=$IMAGE
 
 
