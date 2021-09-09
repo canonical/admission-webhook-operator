@@ -14,47 +14,44 @@ jobs:
     steps:
     - name: Check out code
       uses: actions/checkout@v2
-
     - name: Install dependencies
       run: |
-        set -eux
-        sudo apt install python3-setuptools
-        sudo pip3 install black flake8
+        sudo apt update
+        sudo apt install tox
+    - name: Lint code
+      run: tox -vve lint
 
-    - name: Check black
-      run: black --check .
-
-    - name: Check flake8
-      run: flake8
-
-# unit:
-#  name: Unit Tests
-  # TODO
+#  unit:
+#    name: Unit Tests
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Check out code
+#        uses: actions/checkout@v2
+#      - name: Install dependencies
+#        run: |
+#          pip install tox
+#      - name: Run unit tests
+#        run: tox -vve unit
 
   integration:
     name: Integration Tests
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v2
-    - name: Setup operator environment
-      uses: charmed-kubernetes/actions-operator@main
-      with:
-        provider: microk8s
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Setup operator environment
+        uses: charmed-kubernetes/actions-operator@main
+        with:
+          provider: microk8s
 
     # TODO: Remove once the actions-operator does this automatically
     - name: Configure kubectl
       run: |
         sg microk8s -c "microk8s config > ~/.kube/config"
 
-    - name: Deploy admission-webhook
+    - name: Test
       run: |
-        set -eux
-        sg lxd -c "charmcraft build"
-        juju deploy ./admission-webhook*.charm \
-          --resource oci-image=$(yq eval '.resources.oci-image.upstream-source' metadata.yaml)
-        juju wait -wvt 300
-        juju status
+        sg microk8s -c "tox -vve integration -- --model testing"
 
     # On failure, capture debugging resources
     - name: Get all
