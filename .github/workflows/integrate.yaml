@@ -37,12 +37,12 @@ jobs:
     name: Integration Tests
     runs-on: ubuntu-latest
     steps:
-      - name: Check out code
-        uses: actions/checkout@v2
-      - name: Setup operator environment
-        uses: charmed-kubernetes/actions-operator@main
-        with:
-          provider: microk8s
+    - name: Check out code
+      uses: actions/checkout@v2
+    - name: Setup operator environment
+      uses: charmed-kubernetes/actions-operator@main
+      with:
+        provider: microk8s
 
     # TODO: Remove once the actions-operator does this automatically
     - name: Configure kubectl
