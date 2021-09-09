@@ -205,7 +205,7 @@ class AdmissionWebhookCharm(CharmBase):
                     {
                         "name": "admission-webhook",
                         "imageDetails": image_details,
-                        "ports": [{"name": "webhook", "containerPort": 443}],
+                        "ports": [{"name": "webhook", "containerPort": 4443}],
                         "volumeConfig": [
                             {
                                 "name": "certs",
@@ -245,6 +245,7 @@ class AdmissionWebhookCharm(CharmBase):
                                             "name": hookenv.service_name(),
                                             "namespace": model,
                                             "path": "/apply-poddefault",
+                                            "port": 4443,
                                         },
                                     },
                                     "objectSelector": {
