@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright 2021 Canonical Ltd.
+# See LICENSE file for licensing details.
 
 import json
 import logging
@@ -10,7 +12,7 @@ from subprocess import check_call
 import yaml
 from ops.charm import CharmBase
 from ops.main import main
-from ops.model import ActiveStatus, Application, MaintenanceStatus
+from ops.model import ActiveStatus, Application, MaintenanceStatus, WaitingStatus
 
 from charmhelpers.core import hookenv
 from oci_image import OCIImageResource, OCIImageResourceError
@@ -113,6 +115,17 @@ subjectAltName=@alt_names"""
     )
 
 
+class CheckFailed(Exception):
+    """ Raise this exception if one of the checks in main fails. """
+
+    def __init__(self, msg, status_type=None):
+        super().__init__()
+
+        self.msg = msg
+        self.status_type = status_type
+        self.status = status_type(msg)
+
+
 class AdmissionWebhookCharm(CharmBase):
     """Deploys the admission-webhook service.
 
@@ -131,9 +144,12 @@ class AdmissionWebhookCharm(CharmBase):
         )
 
     def set_pod_spec(self, event):
-        if not self.model.unit.is_leader():
-            logger.info("Not a leader, skipping set_pod_spec")
-            self.model.unit.status = ActiveStatus()
+        try:
+            self._check_leader()
+
+            image_details = self._check_image_details()
+        except CheckFailed as check_failed:
+            self.model.unit.status = check_failed.status
             return
 
         self.model.unit.status = MaintenanceStatus("Setting pod spec")
@@ -163,12 +179,6 @@ class AdmissionWebhookCharm(CharmBase):
                 for name, value in json.loads(defaults).items()
             ],
         }
-
-        try:
-            image_details = self.image.fetch()
-        except OCIImageResourceError as e:
-            self.model.unit.status = e.status
-            return
 
         model = os.environ["JUJU_MODEL_NAME"]
 
@@ -289,6 +299,18 @@ class AdmissionWebhookCharm(CharmBase):
         )
 
         self.model.unit.status = ActiveStatus()
+
+    def _check_leader(self):
+        if not self.unit.is_leader():
+            # We can't do anything useful when not the leader, so do nothing.
+            raise CheckFailed("Waiting for leadership", WaitingStatus)
+
+    def _check_image_details(self):
+        try:
+            image_details = self.image.fetch()
+        except OCIImageResourceError as e:
+            raise CheckFailed(f"{e.status.message}", e.status_type)
+        return image_details
 
 
 if __name__ == "__main__":
