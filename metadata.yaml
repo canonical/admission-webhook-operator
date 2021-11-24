@@ -1,3 +1,6 @@
+# Copyright 2021 Canonical Ltd.
+# See LICENSE file for licensing details.
+
 name: admission-webhook
 display-name: Admission Webhook
 summary: Injects common data (e.g. env vars, volumes) to pods (e.g. notebooks)
