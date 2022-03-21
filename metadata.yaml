@@ -4,6 +4,7 @@ name: admission-webhook
 summary: Injects common data (e.g. env vars, volumes) to pods (e.g. notebooks)
 description: |
   https://github.com/kubeflow/kubeflow/tree/master/components/admission-webhook
+min-juju-version: "2.9.0"
 series: [kubernetes]
 resources:
   oci-image:
