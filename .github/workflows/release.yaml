@@ -1,3 +1,4 @@
+# reusable workflow triggered manually
 name: Release charm to other tracks and channels
 
 on:
@@ -9,9 +10,6 @@ on:
       origin-channel:
         description: 'Origin Channel'
         required: true
-      rev:
-        description: 'Revision number'
-        required: false
 
 jobs:
   promote-charm:
@@ -26,4 +24,3 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           destination-channel: ${{ github.event.inputs.destination-channel }}
           origin-channel: ${{ github.event.inputs.origin-channel }}
-          revision: ${{ github.event.inputs.rev }}
