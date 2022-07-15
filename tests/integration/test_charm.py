@@ -25,6 +25,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
         resources=resources,
     )
 
+
 async def test_is_active(ops_test: OpsTest):
     await ops_test.model.wait_for_idle(
         apps=["admission-webhook"],

@@ -264,29 +264,10 @@ class AdmissionWebhookCharm(CharmBase):
                                             "port": 4443,
                                         },
                                     },
-                                    "objectSelector": {
-                                        "matchExpressions": [
-                                            {
-                                                "key": "juju-app",
-                                                "operator": "NotIn",
-                                                "values": ["admission-webhook"],
-                                            },
-                                            {
-                                                "key": "app.kubernetes.io/name",
-                                                "operator": "NotIn",
-                                                "values": ["admission-webhook"],
-                                            },
-                                            {
-                                                "key": "juju-operator",
-                                                "operator": "NotIn",
-                                                "values": ["admission-webhook"],
-                                            },
-                                            {
-                                                "key": "operator.juju.is/name",
-                                                "operator": "NotIn",
-                                                "values": ["admission-webhook"],
-                                            },
-                                        ]
+                                    "namespaceSelector": {
+                                        "matchLabels": {
+                                            "app.kubernetes.io/part-of": "kubeflow-profile",
+                                        },
                                     },
                                     "rules": [
                                         {
