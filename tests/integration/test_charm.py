@@ -24,4 +24,12 @@ async def test_build_and_deploy(ops_test: OpsTest):
         entity_url=built_charm_path,
         resources=resources,
     )
-    await ops_test.model.wait_for_idle(timeout=60 * 60)
+
+async def test_is_active(ops_test: OpsTest):
+    await ops_test.model.wait_for_idle(
+        apps=["admission-webhook"],
+        status="active",
+        raise_on_blocked=True,
+        raise_on_error=True,
+        timeout=300,
+    )
