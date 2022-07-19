@@ -247,12 +247,6 @@ class AdmissionWebhookCharm(CharmBase):
                             "name": "admission-webhook",
                             "webhooks": [
                                 {
-                                    # Probably not necessary, but keeps us in sync with upstream
-                                    # which wasn't always using admissionReviewVersions/v1
-                                    "admissionReviewVersions": [
-                                        "v1beta1",
-                                        "v1",
-                                    ],
                                     "name": "admission-webhook.kubeflow.org",
                                     "failurePolicy": "Fail",
                                     "clientConfig": {
