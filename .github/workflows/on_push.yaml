@@ -13,7 +13,6 @@ on:
       - master
       - main
       - track/**
-      - hucko*
 
 jobs:
 
@@ -24,9 +23,9 @@ jobs:
       charmcraft-credentials: "${{ secrets.CHARMCRAFT_CREDENTIALS }}"
 
   # publish runs in series with tests, and only publishes if tests passes
-  # publish-charm:
-  #   name: Publish Charm
-  #   needs: tests
-  #   uses: ./.github/workflows/publish.yaml
-  #   secrets:
-  #     charmcraft-credentials: "${{ secrets.CHARMCRAFT_CREDENTIALS }}"
+  publish-charm:
+    name: Publish Charm
+    needs: tests
+    uses: ./.github/workflows/publish.yaml
+    secrets:
+      charmcraft-credentials: "${{ secrets.CHARMCRAFT_CREDENTIALS }}"

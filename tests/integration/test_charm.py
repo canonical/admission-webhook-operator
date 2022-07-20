@@ -104,6 +104,7 @@ def delete_all_from_yaml(
 
 @pytest.fixture(scope="session")
 def lightkube_client() -> lightkube.Client:
+    """Initiates the lightkube client with PodDefault crd resource"""
     client = lightkube.Client()
     create_namespaced_resource(
         group="kubeflow.org", version="v1alpha1", kind="PodDefault", plural="poddefaults"
@@ -113,10 +114,10 @@ def lightkube_client() -> lightkube.Client:
 
 def test_namespace_selector_poddefault_service_account_token_mounted(lightkube_client):
     try:
-        sleep(30)
+        sleep(30)  # to overcome this bug https://bugs.launchpad.net/juju/+bug/1981833
         workloads_file = "./tests/integration/poddefault_test_workloads.yaml"
         create_all_from_yaml(workloads_file, lightkube_client)
-        validate_new_pod(lightkube_client, "testpod", "user")
+        validate_token_mounted(lightkube_client, "testpod", "user")
     except Exception as e:
         log.info(f"Problem during test execution {e}")
     finally:
@@ -128,11 +129,17 @@ def test_namespace_selector_poddefault_service_account_token_mounted(lightkube_c
     stop=stop_after_delay(30),
     reraise=True,
 )
-def validate_new_pod(
+def validate_token_mounted(
     client: lightkube.Client,
     pods_name: str,
     namespace_name: str,
 ):
+    """Checks if the token was mounted successfully by checking the volumes on pod
+    Args:
+        client: Lightkube client
+        pods_name: Name of the pod
+        namespace_name: Name of the namespace
+    """
     pod = client.get(Pod, name=pods_name, namespace=namespace_name)
     target_vols = [
         volume.name for volume in pod.spec.volumes if volume.name == "volume-kf-pipeline-token"
