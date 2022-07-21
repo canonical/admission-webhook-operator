@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: user
+  name: test-admission-webhook-user-namespace
   labels:
     app.kubernetes.io/part-of: kubeflow-profile
 ---
@@ -9,7 +9,7 @@ apiVersion: kubeflow.org/v1alpha1
 kind: PodDefault
 metadata:
   name: access-ml-pipeline
-  namespace: user
+  namespace: test-admission-webhook-user-namespace
 spec:
   desc: Allow access to Kubeflow Pipelines
   selector:
@@ -37,7 +37,7 @@ metadata:
   labels:
     access-ml-pipeline: "true"
   name: testpod
-  namespace: user
+  namespace: test-admission-webhook-user-namespace
 spec:
   containers:
   - args:

@@ -1,6 +1,6 @@
 # Copyright 2021 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-black
-flake8
-flake8-copyright<0.3
+black==22.6.0
+flake8==4.0.1
+flake8-copyright==0.2.2

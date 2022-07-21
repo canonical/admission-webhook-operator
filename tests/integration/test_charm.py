@@ -1,12 +1,12 @@
 # Copyright 2021 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-from asyncio.log import logger
+from charmed_kubeflow_chisme.lightkube.batch import apply_many
 from time import sleep
 import lightkube
 from lightkube import codecs
 from lightkube.generic_resource import create_namespaced_resource
-from lightkube.resources.core_v1 import Pod
+from lightkube.resources.core_v1 import Pod, Namespace
 import logging
 from pathlib import Path
 import pytest
@@ -52,56 +52,6 @@ def _safe_load_file_to_text(filename: str):
     return text
 
 
-def create_all_from_yaml(
-    yaml_file: str,
-    lightkube_client: lightkube.Client = None,
-):
-    """Creates all k8s resources listed in a YAML file via lightkube
-    Args:
-        yaml_file (str or Path): Either a string filename or a string of valid YAML.  Will attempt
-                                 to open a filename at this path, failing back to interpreting the
-                                 string directly as YAML.
-        lightkube_client: Instantiated lightkube client or None
-    """
-
-    yaml_text = _safe_load_file_to_text(yaml_file)
-
-    if lightkube_client is None:
-        lightkube_client = lightkube.Client()
-
-    for obj in codecs.load_all_yaml(yaml_text):
-        try:
-            lightkube_client.create(obj)
-        except lightkube.core.exceptions.ApiError as e:
-            raise ValueError(f"unable to create resource from file {yaml_file} becuase of {e}")
-
-
-def delete_all_from_yaml(
-    yaml_file: str, lightkube_client: lightkube.Client = None, ignore_errors: bool = True
-):
-    """Deletes all k8s resources listed in a YAML file via lightkube
-    Args:
-        yaml_file (str or Path): Either a string filename or a string of valid YAML.  Will attempt
-                                 to open a filename at this path, failing back to interpreting the
-                                 string directly as YAML.
-        lightkube_client: Instantiated lightkube client or None
-    """
-    log.info("Clearing the namespace")
-    yaml_text = _safe_load_file_to_text(yaml_file)
-
-    if lightkube_client is None:
-        lightkube_client = lightkube.Client()
-
-    for obj in codecs.load_all_yaml(yaml_text):
-        try:
-            lightkube_client.delete(type(obj), obj.metadata.name)
-        except lightkube.core.exceptions.ApiError as e:
-            if ignore_errors:
-                logger.info(f"Ignoring exception {e}")
-                continue
-            raise ValueError(f"unable to delete resource from file {yaml_file}")
-
-
 @pytest.fixture(scope="session")
 def lightkube_client() -> lightkube.Client:
     """Initiates the lightkube client with PodDefault crd resource"""
@@ -112,16 +62,25 @@ def lightkube_client() -> lightkube.Client:
     return client
 
 
-def test_namespace_selector_poddefault_service_account_token_mounted(lightkube_client):
+@pytest.fixture(scope="function", params=["./tests/integration/poddefault_test_workloads.yaml"])
+def kubernetes_workloads(request, lightkube_client: lightkube.Client):
+    sleep(30)  # to overcome this bug https://bugs.launchpad.net/juju/+bug/1981833
     try:
-        sleep(30)  # to overcome this bug https://bugs.launchpad.net/juju/+bug/1981833
-        workloads_file = "./tests/integration/poddefault_test_workloads.yaml"
-        create_all_from_yaml(workloads_file, lightkube_client)
-        validate_token_mounted(lightkube_client, "testpod", "user")
+        workloads = codecs.load_all_yaml(_safe_load_file_to_text(request.param))
     except Exception as e:
-        log.info(f"Problem during test execution {e}")
-    finally:
-        delete_all_from_yaml(workloads_file, lightkube_client)
+        log.error(f"Unable to load workloads from {request.param}, ended up with {e}")
+
+    apply_many(lightkube_client, workloads, "test")
+    log.info("Workloads created")
+    yield
+    lightkube_client.delete(Namespace, name="test-admission-webhook-user-namespace")
+    log.info("Workloads deleted")
+
+
+def test_namespace_selector_poddefault_service_account_token_mounted(
+    lightkube_client, kubernetes_workloads
+):
+    validate_token_mounted(lightkube_client, "testpod", "test-admission-webhook-user-namespace")
 
 
 @retry(
