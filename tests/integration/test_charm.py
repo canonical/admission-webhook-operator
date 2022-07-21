@@ -64,6 +64,7 @@ def lightkube_client() -> lightkube.Client:
 
 @pytest.fixture(scope="function", params=["./tests/integration/poddefault_test_workloads.yaml"])
 def kubernetes_workloads(request, lightkube_client: lightkube.Client):
+    """Deploys and removes the workloads defined in the workloads file"""
     sleep(30)  # to overcome this bug https://bugs.launchpad.net/juju/+bug/1981833
     try:
         workloads = codecs.load_all_yaml(_safe_load_file_to_text(request.param))
