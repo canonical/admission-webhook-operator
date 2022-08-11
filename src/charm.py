@@ -121,9 +121,9 @@ class CheckFailed(Exception):
     def __init__(self, msg, status_type=None):
         super().__init__()
 
-        self.msg = msg
+        self.msg = str(msg)
         self.status_type = status_type
-        self.status = status_type(msg)
+        self.status = status_type(self.msg)
 
 
 class AdmissionWebhookCharm(CharmBase):
@@ -138,6 +138,7 @@ class AdmissionWebhookCharm(CharmBase):
         self.image = OCIImageResource(self, "oci-image")
         self.framework.observe(self.on.install, self.set_pod_spec)
         self.framework.observe(self.on.upgrade_charm, self.set_pod_spec)
+        self.framework.observe(self.on.leader_elected, self.set_pod_spec)
         self.framework.observe(
             self.on.pod_defaults_relation_changed,
             self.set_pod_spec,

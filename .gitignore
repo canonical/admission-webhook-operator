@@ -1,2 +1,5 @@
 *.charm
 build/
+.tox/
+__pycache__
+.idea
