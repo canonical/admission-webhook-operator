@@ -12,59 +12,59 @@ spec:
   preserveUnknownFields: false
   scope: Namespaced
   versions:
-    - name: v1alpha1
-      served: true
-      storage: true
-      schema:
-        openAPIV3Schema:
-          properties:
-            apiVersion:
-              type: string
-            kind:
-              type: string
-            metadata:
-              type: object
-            spec:
-              properties:
-                desc:
-                  type: string
-                serviceAccountName:
-                  type: string
-                automountServiceAccountToken:
-                  type: boolean
-                env:
-                  items:
-                    type: object
-                    x-kubernetes-preserve-unknown-fields: true
-                  type: array
-                  x-kubernetes-preserve-unknown-fields: true
-                envFrom:
-                  items:
-                    type: object
-                    x-kubernetes-preserve-unknown-fields: true
-                  type: array
-                  x-kubernetes-preserve-unknown-fields: true
-                selector:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            type: string
+          kind:
+            type: string
+          metadata:
+            type: object
+          spec:
+            properties:
+              automountServiceAccountToken:
+                type: boolean
+              desc:
+                type: string
+              env:
+                items:
                   type: object
                   x-kubernetes-preserve-unknown-fields: true
-                volumeMounts:
-                  items:
-                    type: object
-                    x-kubernetes-preserve-unknown-fields: true
-                  type: array
+                type: array
+                x-kubernetes-preserve-unknown-fields: true
+              envFrom:
+                items:
+                  type: object
                   x-kubernetes-preserve-unknown-fields: true
-                volumes:
-                  items:
-                    type: object
-                    x-kubernetes-preserve-unknown-fields: true
-                  type: array
+                type: array
+                x-kubernetes-preserve-unknown-fields: true
+              selector:
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
+              serviceAccountName:
+                type: string
+              volumeMounts:
+                items:
+                  type: object
                   x-kubernetes-preserve-unknown-fields: true
-              required:
-                - selector
-              type: object
-              x-kubernetes-preserve-unknown-fields: true
-            status:
-              type: object
-              x-kubernetes-preserve-unknown-fields: true
-          type: object
-          x-kubernetes-preserve-unknown-fields: true
+                type: array
+                x-kubernetes-preserve-unknown-fields: true
+              volumes:
+                items:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
+                type: array
+                x-kubernetes-preserve-unknown-fields: true
+            required:
+            - selector
+            type: object
+            x-kubernetes-preserve-unknown-fields: true
+          status:
+            type: object
+            x-kubernetes-preserve-unknown-fields: true
+        type: object
+        x-kubernetes-preserve-unknown-fields: true
+    served: true
+    storage: true

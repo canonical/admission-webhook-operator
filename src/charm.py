@@ -216,18 +216,22 @@ class AdmissionWebhookCharm(CharmBase):
                     {
                         "name": "admission-webhook",
                         "imageDetails": image_details,
-                        "ports": [{"name": "webhook", "containerPort": 4443}],
+                        "args": [
+                            "--tlsCertFile=/etc/webhook/certs/tls.crt",
+                            "--tlsKeyFile=/etc/webhook/certs/tls.key",
+                        ],
+                        "ports": [{"name": "https-webhook", "containerPort": 4443}],
                         "volumeConfig": [
                             {
                                 "name": "certs",
                                 "mountPath": "/etc/webhook/certs",
                                 "files": [
                                     {
-                                        "path": "cert.pem",
+                                        "path": "tls.crt",
                                         "content": Path("/run/cert.pem").read_text(),
                                     },
                                     {
-                                        "path": "key.pem",
+                                        "path": "tls.key",
                                         "content": Path("/run/server.key").read_text(),
                                     },
                                 ],
