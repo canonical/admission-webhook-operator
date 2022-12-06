@@ -1,18 +1,19 @@
 # Copyright 2021 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-from charmed_kubeflow_chisme.lightkube.batch import apply_many
-from time import sleep
-import lightkube
-from lightkube import codecs
-from lightkube.generic_resource import create_namespaced_resource
-from lightkube.resources.core_v1 import Pod, Namespace
 import logging
 from pathlib import Path
+from time import sleep
+
+import lightkube
 import pytest
 import yaml
+from charmed_kubeflow_chisme.lightkube.batch import apply_many
+from lightkube import codecs
+from lightkube.generic_resource import create_namespaced_resource
+from lightkube.resources.core_v1 import Namespace, Pod
 from pytest_operator.plugin import OpsTest
-from tenacity import retry, wait_exponential, stop_after_delay
+from tenacity import retry, stop_after_delay, wait_exponential
 
 log = logging.getLogger(__name__)
 
