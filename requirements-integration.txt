@@ -36,7 +36,7 @@ cffi==1.15.1
     #   pynacl
 charmed-kubeflow-chisme==0.0.5
     # via -r ./requirements-integration.in
-charset-normalizer==2.1.1
+charset-normalizer==3.0.1
     # via
     #   aiohttp
     #   requests
