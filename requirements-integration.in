@@ -1,0 +1,10 @@
+aiohttp
+charmed-kubeflow-chisme
+jinja2
+juju
+lightkube
+pytest-operator
+pyyaml
+requests
+tenacity
+-r requirements.txt

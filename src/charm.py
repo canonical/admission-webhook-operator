@@ -10,12 +10,11 @@ from pathlib import Path
 from subprocess import check_call
 
 import yaml
+from charmhelpers.core import hookenv
+from oci_image import OCIImageResource, OCIImageResourceError
 from ops.charm import CharmBase
 from ops.main import main
 from ops.model import ActiveStatus, Application, MaintenanceStatus, WaitingStatus
-
-from charmhelpers.core import hookenv
-from oci_image import OCIImageResource, OCIImageResourceError
 
 logger = logging.getLogger(__name__)
 
