@@ -244,7 +244,7 @@ class AdmissionWebhookCharm(CharmBase):
                     "customResources": custom_resources,
                     "mutatingWebhookConfigurations": [
                         {
-                            "name": "admission-webhook",
+                            "name": "admission-webhook-mutating-webhook-configuration",
                             "webhooks": [
                                 {
                                     # Probably not necessary, but keeps us in sync with upstream
