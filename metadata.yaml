@@ -8,14 +8,12 @@ website: https://charmhub.io/admission-webhook
 source: https://github.com/canonical/admission-webhook-operator
 issues: https://github.com/canonical/admission-webhook-index/issues
 docs: https://discourse.charmhub.io/t/admission-webhook-index/8210
-min-juju-version: "2.9.0"
-series: [kubernetes]
+containers:
+  admission-webhook:
+    resource: oci-image
 resources:
   oci-image:
     type: oci-image
     description: Backing OCI image
     auto-fetch: true
     upstream-source: docker.io/kubeflownotebookswg/poddefaults-webhook:v1.7.0
-provides:
-  pod-defaults:
-    interface: pod-defaults
