@@ -1,4 +1,8 @@
 # Copyright 2021 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-options: {}
+options:
+  port:
+  type: string
+  default: '4443'
+  description: Webhook server port
