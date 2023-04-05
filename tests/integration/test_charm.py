@@ -9,15 +9,17 @@ import lightkube
 import pytest
 import yaml
 from charmed_kubeflow_chisme.lightkube.batch import apply_many
-from lightkube import codecs
+from lightkube import codecs, Client, ApiError
 from lightkube.generic_resource import create_namespaced_resource
-from lightkube.resources.core_v1 import Namespace, Pod
+from lightkube.resources.core_v1 import Namespace, Pod, Service
+from lightkube.resources.apiextensions_v1 import CustomResourceDefinition
 from pytest_operator.plugin import OpsTest
 from tenacity import retry, stop_after_delay, wait_exponential
 
 log = logging.getLogger(__name__)
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
+APP_NAME = METADATA["name"]
 
 
 @pytest.mark.abort_on_fail
@@ -107,3 +109,37 @@ def validate_token_mounted(
         volume.name for volume in pod.spec.volumes if volume.name == "volume-kf-pipeline-token"
     ]
     assert len(target_vols) == 1
+
+
+@pytest.mark.abort_on_fail
+async def test_remove_with_resources_present(ops_test: OpsTest):
+    """Test remove with all resources deployed.
+    Verify that all deployed resources that need to be removed are removed.
+    """
+
+    # remove deployed charm and verify that it is removed
+    await ops_test.model.remove_application(app_name=APP_NAME, block_until_done=True)
+    assert APP_NAME not in ops_test.model.applications
+
+    # verify that all resources that were deployed are removed
+    lightkube_client = Client()
+
+    # verify all CRDs in namespace are removed
+    crd_list = lightkube_client.list(
+        CustomResourceDefinition,
+        labels=[("app.juju.is/created-by", "admission-webhook")],
+        namespace=ops_test.model.name,
+    )
+    assert not list(crd_list)
+
+    # verify that Service is removed
+    try:
+        _ = lightkube_client.get(
+            Service,
+            name="admission-webhook",
+            namespace=ops_test.model.name,
+        )
+    except ApiError as error:
+        if error.status.code != 404:
+            # other error than Not Found
+            assert False
