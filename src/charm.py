@@ -3,28 +3,23 @@
 # See LICENSE file for licensing details.
 """A Juju Charm for Admission Webhook Operator."""
 
-import json
 import logging
-import os
 from base64 import b64encode
-from pathlib import Path
 
-import yaml
-from charmhelpers.core import hookenv
-from oci_image import OCIImageResource, OCIImageResourceError
-from ops.charm import CharmBase
-from ops.main import main
-from lightkube import ApiError
-from lightkube.models.core_v1 import ServicePort
-from lightkube.generic_resource import load_in_cluster_generic_resources
-from ops.model import ActiveStatus, Container, MaintenanceStatus, WaitingStatus
-from ops.pebble import Layer
-from ops.framework import StoredState
-from charms.observability_libs.v1.kubernetes_service_patch import KubernetesServicePatch
-from charmed_kubeflow_chisme.kubernetes import KubernetesResourceHandler
 from charmed_kubeflow_chisme.exceptions import ErrorWithStatus, GenericCharmRuntimeError
+from charmed_kubeflow_chisme.kubernetes import KubernetesResourceHandler
 from charmed_kubeflow_chisme.lightkube.batch import delete_many
 from charmed_kubeflow_chisme.pebble import update_layer
+from charmhelpers.core import hookenv
+from charms.observability_libs.v1.kubernetes_service_patch import KubernetesServicePatch
+from lightkube import ApiError
+from lightkube.generic_resource import load_in_cluster_generic_resources
+from lightkube.models.core_v1 import ServicePort
+from ops.charm import CharmBase
+from ops.framework import StoredState
+from ops.main import main
+from ops.model import ActiveStatus, Container, MaintenanceStatus, WaitingStatus
+from ops.pebble import Layer
 
 from certs import gen_certs
 
@@ -239,7 +234,7 @@ class AdmissionWebhookCharm(CharmBase):
         """Installation only tasks."""
         # deploy K8S resources to speed up deployment
         self._apply_k8s_resources()
-        
+
     def _on_remove(self, _):
         """Remove all resources."""
         delete_error = None
