@@ -31,6 +31,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
     await ops_test.model.deploy(
         entity_url=built_charm_path,
         resources=resources,
+        trust=True,
     )
 
 
