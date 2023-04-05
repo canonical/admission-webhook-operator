@@ -3,20 +3,19 @@ kind: MutatingWebhookConfiguration
 metadata:
   name: {{ app_name }}-mutating-webhook-configuration
 webhooks:
-# Probably not necessary, but keeps us in sync with upstream
-# which wasn't always using admissionReviewVersions/v1
-- admissionReviewVersions: 
+- admissionReviewVersions:
     - v1beta1
     - v1
-    clientConfig:
-    caBundle: {{ca_bundle}}
+  clientConfig:
+    caBundle: {{ ca_bundle }}
     service:
-      name: {{service_name}}
-      namespace: {{namespace}}
+      name: {{ app_name }}
+      namespace: {{ namespace }}
       path: /apply-poddefault
-      port: {{port}}
+      port: {{ port }}
+  sideEffects: None
   failurePolicy: Fail
-  name: $(podDefaultsDeploymentName).kubeflow.org
+  name: admission-webhook.kubeflow.org
   namespaceSelector:
     matchLabels:
       app.kubernetes.io/part-of: kubeflow-profile
