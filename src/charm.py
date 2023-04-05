@@ -58,6 +58,7 @@ class AdmissionWebhookCharm(CharmBase):
         self._exec_command = "/webhook"
         self._namespace = self.model.name
         self._name = self.model.app.name
+        self._service_name = hookenv.service_name()
         self._k8s_resource_handler = None
         self._crd_resource_handler = None
 
@@ -78,6 +79,7 @@ class AdmissionWebhookCharm(CharmBase):
             "namespace": self._namespace,
             "port": self._port,
             "ca_bundle": b64encode(self._cert_ca.encode("ascii")).decode("utf-8"),
+            "service_name": self._service_name,
         }
 
         port = ServicePort(int(self._port), name=f"{self.app.name}")
@@ -208,7 +210,7 @@ class AdmissionWebhookCharm(CharmBase):
 
     def _gen_certs(self):
         """Refresh the certificates, overwriting them if they already existed."""
-        certs = gen_certs(model=self._namespace, service_name=f"{self._name}-pod-webhook")
+        certs = gen_certs(model=self._namespace, service_name=f"{self._service_name}")
         for k, v in certs.items():
             setattr(self._stored, k, v)
 
@@ -237,7 +239,7 @@ class AdmissionWebhookCharm(CharmBase):
         """Installation only tasks."""
         # deploy K8S resources to speed up deployment
         self._apply_k8s_resources()
-
+        
     def _on_remove(self, _):
         """Remove all resources."""
         delete_error = None
