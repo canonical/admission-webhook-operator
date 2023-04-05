@@ -9,10 +9,10 @@ import lightkube
 import pytest
 import yaml
 from charmed_kubeflow_chisme.lightkube.batch import apply_many
-from lightkube import codecs, Client, ApiError
+from lightkube import ApiError, Client, codecs
 from lightkube.generic_resource import create_namespaced_resource
-from lightkube.resources.core_v1 import Namespace, Pod, Service
 from lightkube.resources.apiextensions_v1 import CustomResourceDefinition
+from lightkube.resources.core_v1 import Namespace, Pod, Service
 from pytest_operator.plugin import OpsTest
 from tenacity import retry, stop_after_delay, wait_exponential
 
