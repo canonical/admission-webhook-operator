@@ -62,7 +62,7 @@ class AdmissionWebhookCharm(CharmBase):
         self.framework.observe(self.on.admission_webhook_pebble_ready, self._on_pebble_ready)
         # setup events to be handled by specific event handlers
         self.framework.observe(self.on.install, self._on_install)
-        # self.framework.observe(self.on.upgrade_charm, self._on_upgrade)
+        self.framework.observe(self.on.upgrade_charm, self._on_upgrade)
         self.framework.observe(self.on.remove, self._on_remove)
 
         # generate certs
@@ -275,6 +275,11 @@ class AdmissionWebhookCharm(CharmBase):
 
         # proceed with other actions
         self._on_event(event)
+
+    def _on_upgrade(self, _):
+        """Perform upgrade steps."""
+        # force conflict resolution in K8S resources update
+        self._on_event(_, force_conflicts=True)
 
     def _on_event(self, event, force_conflicts: bool = False) -> None:
         """Perform all required actions for the Charm.
