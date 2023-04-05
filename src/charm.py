@@ -8,7 +8,6 @@ import logging
 import os
 from base64 import b64encode
 from pathlib import Path
-from subprocess import check_call
 
 import yaml
 from charmhelpers.core import hookenv
@@ -18,13 +17,16 @@ from ops.main import main
 from lightkube import ApiError
 from lightkube.models.core_v1 import ServicePort
 from lightkube.generic_resource import load_in_cluster_generic_resources
-from ops.model import ActiveStatus, Application, MaintenanceStatus, WaitingStatus
+from ops.model import ActiveStatus, Container, MaintenanceStatus, WaitingStatus
 from ops.pebble import Layer
+from ops.framework import StoredState
 from charms.observability_libs.v1.kubernetes_service_patch import KubernetesServicePatch
 from charmed_kubeflow_chisme.kubernetes import KubernetesResourceHandler
 from charmed_kubeflow_chisme.exceptions import ErrorWithStatus, GenericCharmRuntimeError
 from charmed_kubeflow_chisme.lightkube.batch import delete_many
 from charmed_kubeflow_chisme.pebble import update_layer
+
+from certs import gen_certs
 
 K8S_RESOURCE_FILES = [
     "src/templates/webhook_configuration.yaml.j2",
@@ -32,136 +34,50 @@ K8S_RESOURCE_FILES = [
 ]
 
 CRD_RESOURCE_FILES = [
-    "src/templates/crd.yaml.j2",
+    "src/templates/crds.yaml.j2",
 ]
 
-logger = logging.getLogger(__name__)
-
-
-def gen_certs(namespace, service_name):
-    """Generate certificates."""
-    if Path("/run/cert.pem").exists():
-        hookenv.log("Found existing cert.pem, not generating new cert.")
-        return
-
-    Path("/run/ssl.conf").write_text(
-        f"""[ req ]
-default_bits = 2048
-prompt = no
-default_md = sha256
-req_extensions = req_ext
-distinguished_name = dn
-[ dn ]
-C = GB
-ST = Canonical
-L = Canonical
-O = Canonical
-OU = Canonical
-CN = 127.0.0.1
-[ req_ext ]
-subjectAltName = @alt_names
-[ alt_names ]
-DNS.1 = {service_name}
-DNS.2 = {service_name}.{namespace}
-DNS.3 = {service_name}.{namespace}.svc
-DNS.4 = {service_name}.{namespace}.svc.cluster
-DNS.5 = {service_name}.{namespace}.svc.cluster.local
-IP.1 = 127.0.0.1
-[ v3_ext ]
-authorityKeyIdentifier=keyid,issuer:always
-basicConstraints=CA:FALSE
-keyUsage=keyEncipherment,dataEncipherment,digitalSignature
-extendedKeyUsage=serverAuth,clientAuth
-subjectAltName=@alt_names"""
-    )
-
-    check_call(["openssl", "genrsa", "-out", "/run/ca.key", "2048"])
-    check_call(["openssl", "genrsa", "-out", "/run/server.key", "2048"])
-    check_call(
-        [
-            "openssl",
-            "req",
-            "-x509",
-            "-new",
-            "-sha256",
-            "-nodes",
-            "-days",
-            "3650",
-            "-key",
-            "/run/ca.key",
-            "-subj",
-            "/CN=127.0.0.1",
-            "-out",
-            "/run/ca.crt",
-        ]
-    )
-    check_call(
-        [
-            "openssl",
-            "req",
-            "-new",
-            "-sha256",
-            "-key",
-            "/run/server.key",
-            "-out",
-            "/run/server.csr",
-            "-config",
-            "/run/ssl.conf",
-        ]
-    )
-    check_call(
-        [
-            "openssl",
-            "x509",
-            "-req",
-            "-sha256",
-            "-in",
-            "/run/server.csr",
-            "-CA",
-            "/run/ca.crt",
-            "-CAkey",
-            "/run/ca.key",
-            "-CAcreateserial",
-            "-out",
-            "/run/cert.pem",
-            "-days",
-            "365",
-            "-extensions",
-            "v3_ext",
-            "-extfile",
-            "/run/ssl.conf",
-        ]
-    )
+CONTAINER_CERTS_DEST = "/etc/webhook/certs"
 
 
 class AdmissionWebhookCharm(CharmBase):
     """A Juju Charm for Admission Webhook Operator."""
 
+    _stored = StoredState()
+
     def __init__(self, framework):
         """Initialize charm and setup the container."""
         super().__init__(framework)
-        self.image = OCIImageResource(self, "oci-image")
-        self.framework.observe(self.on.install, self.set_pod_spec)
-        self.framework.observe(self.on.upgrade_charm, self.set_pod_spec)
-        self.framework.observe(self.on.leader_elected, self.set_pod_spec)
-        self.framework.observe(
-            self.on.pod_defaults_relation_changed,
-            self.set_pod_spec,
-        )
+
+        # retrieve configuration and base settings
+        self.logger = logging.getLogger(__name__)
         self._container_name = "admission-webhook"
         self._container = self.unit.get_container(self._container_name)
         self._port = self.model.config["port"]
         self._lightkube_field_manager = "lightkube"
+        self._exec_command = "/webhook"
         self._namespace = self.model.name
         self._name = self.model.app.name
+        self._k8s_resource_handler = None
+        self._crd_resource_handler = None
+
+        # setup events to be handled by main event handler
+        self.framework.observe(self.on.config_changed, self._on_event)
+        self.framework.observe(self.on.admission_webhook_pebble_ready, self._on_pebble_ready)
+        # setup events to be handled by specific event handlers
+        self.framework.observe(self.on.install, self._on_install)
+        # self.framework.observe(self.on.upgrade_charm, self._on_upgrade)
+        self.framework.observe(self.on.remove, self._on_remove)
+
+        # generate certs
+        self._gen_certs_if_missing()
 
         # setup context to be used for updating K8S resources
         self._context = {
             "app_name": self._name,
             "namespace": self._namespace,
-            "service_name": hookenv.service_name(),
             "port": self._port,
-            "ca_bundle": "",  # b64encode(self._stored.ca.encode("ascii")).decode("utf-8"),
+            "ca_bundle": b64encode(self._cert_ca.encode("ascii")).decode("utf-8"),
         }
 
         port = ServicePort(int(self._port), name=f"{self.app.name}")
@@ -213,10 +129,23 @@ class AdmissionWebhookCharm(CharmBase):
                     "override": "replace",
                     "summary": "Entry point of admission-webhook-operator image",
                     "startup": "enabled",
+                    "command": self._exec_command,
                 },
             },
         }
         return Layer(layer_config)
+
+    @property
+    def _cert(self):
+        return self._stored.cert
+
+    @property
+    def _cert_key(self):
+        return self._stored.key
+
+    @property
+    def _cert_ca(self):
+        return self._stored.ca
 
     def _check_leader(self):
         """Check if this unit is a leader."""
@@ -265,6 +194,45 @@ class AdmissionWebhookCharm(CharmBase):
                 raise GenericCharmRuntimeError("CRD resources creation failed") from error
         self.model.unit.status = MaintenanceStatus("K8S resources created")
 
+    def _gen_certs_if_missing(self):
+        """Generate certificates if they don't already exist in _stored."""
+        self.logger.info("_gen_certs_if_missing")
+        cert_attributes = ["cert", "ca", "key"]
+        # Generate new certs if any cert attribute is missing
+        for cert_attribute in cert_attributes:
+            try:
+                getattr(self._stored, cert_attribute)
+            except AttributeError:
+                self._gen_certs()
+                break
+
+    def _gen_certs(self):
+        """Refresh the certificates, overwriting them if they already existed."""
+        certs = gen_certs(model=self._namespace, service_name=f"{self._name}-pod-webhook")
+        for k, v in certs.items():
+            setattr(self._stored, k, v)
+
+    def _upload_certs_to_container(self):
+        """Upload generated certs to container."""
+        try:
+            self._check_container_connection(self.container)
+        except ErrorWithStatus as error:
+            self.model.unit.status = error.status
+            return
+
+        self.container.push(CONTAINER_CERTS_DEST + "/key.pem", self._cert_key, make_dirs=True)
+        self.container.push(CONTAINER_CERTS_DEST + "/cert.pem", self._cert, make_dirs=True)
+
+    def _check_container_connection(self, container: Container) -> None:
+        """Check if connection can be made with container.
+        Args:
+            container: the named container in a unit to check.
+        Raises:
+            ErrorWithStatus if the connection cannot be made.
+        """
+        if not container.can_connect():
+            raise ErrorWithStatus("Pod startup is not complete", MaintenanceStatus)
+
     def _on_install(self, _):
         """Installation only tasks."""
         # deploy K8S resources to speed up deployment
@@ -296,6 +264,21 @@ class AdmissionWebhookCharm(CharmBase):
 
         self.unit.status = MaintenanceStatus("K8S resources removed")
 
+    def _on_pebble_ready(self, event):
+        """Configure started container."""
+        try:
+            self._check_container_connection(self.container)
+        except ErrorWithStatus as error:
+            self.model.unit.status = error.status
+            return
+
+        # container is ready
+        # upload certs to container
+        self._upload_certs_to_container()
+
+        # proceed with other actions
+        self._on_event(event)
+
     def _on_event(self, event, force_conflicts: bool = False) -> None:
         """Perform all required actions for the Charm.
 
@@ -315,6 +298,7 @@ class AdmissionWebhookCharm(CharmBase):
         except ErrorWithStatus as err:
             self.model.unit.status = err.status
             self.logger.error(f"Failed to handle {event} with error: {err}")
+        self.model.unit.status = ActiveStatus()
 
 
 if __name__ == "__main__":
