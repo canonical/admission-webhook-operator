@@ -9,7 +9,7 @@ webhooks:
   clientConfig:
     caBundle: {{ ca_bundle }}
     service:
-      name: {{ app_name }}
+      name: {{ service_name }}
       namespace: {{ namespace }}
       path: /apply-poddefault
       port: {{ port }}
