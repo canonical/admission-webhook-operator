@@ -5,6 +5,7 @@
 
 import logging
 from base64 import b64encode
+from pathlib import Path
 
 from charmed_kubeflow_chisme.exceptions import ErrorWithStatus, GenericCharmRuntimeError
 from charmed_kubeflow_chisme.kubernetes import KubernetesResourceHandler
@@ -223,8 +224,8 @@ class AdmissionWebhookCharm(CharmBase):
             self.model.unit.status = error.status
             return
 
-        self.container.push(CONTAINER_CERTS_DEST + "/key.pem", self._cert_key, make_dirs=True)
-        self.container.push(CONTAINER_CERTS_DEST + "/cert.pem", self._cert, make_dirs=True)
+        self.container.push(Path(f"{CONTAINER_CERTS_DEST}/key.pem"), self._cert_key, make_dirs=True)
+        self.container.push(Path(f"{CONTAINER_CERTS_DEST}/cert.pem"), self._cert, make_dirs=True)
 
     def _check_container_connection(self, container: Container) -> None:
         """Check if connection can be made with container.
