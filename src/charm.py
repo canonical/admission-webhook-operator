@@ -235,6 +235,7 @@ class AdmissionWebhookCharm(CharmBase):
             ErrorWithStatus if the connection cannot be made.
         """
         if not container.can_connect():
+            self.logger.warning("Connection cannot be established with container")
             raise ErrorWithStatus("Pod startup is not complete", MaintenanceStatus)
 
     def _on_install(self, _):
