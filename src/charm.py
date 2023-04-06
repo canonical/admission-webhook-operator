@@ -197,7 +197,7 @@ class AdmissionWebhookCharm(CharmBase):
 
     def _gen_certs_if_missing(self):
         """Generate certificates if they don't already exist in _stored."""
-        self.logger.info("_gen_certs_if_missing")
+        self.logger.info("Generating certificates if missing.")
         cert_attributes = ["cert", "ca", "key"]
         # Generate new certs if any cert attribute is missing
         for cert_attribute in cert_attributes:
@@ -206,9 +206,11 @@ class AdmissionWebhookCharm(CharmBase):
             except AttributeError:
                 self._gen_certs()
                 break
+        self.logger.info("Certificates already exist.")
 
     def _gen_certs(self):
         """Refresh the certificates, overwriting them if they already existed."""
+        self.logger.info("Generating certificates..")
         certs = gen_certs(model=self._namespace, service_name=f"{self._service_name}")
         for k, v in certs.items():
             setattr(self._stored, k, v)
