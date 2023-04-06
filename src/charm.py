@@ -270,13 +270,6 @@ class AdmissionWebhookCharm(CharmBase):
 
     def _on_pebble_ready(self, event):
         """Configure started container."""
-        try:
-            self._check_container_connection(self.container)
-        except ErrorWithStatus as error:
-            self.model.unit.status = error.status
-            return
-
-        # container is ready
         # upload certs to container
         self._upload_certs_to_container()
 
