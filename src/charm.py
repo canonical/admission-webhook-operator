@@ -10,7 +10,6 @@ from charmed_kubeflow_chisme.exceptions import ErrorWithStatus, GenericCharmRunt
 from charmed_kubeflow_chisme.kubernetes import KubernetesResourceHandler
 from charmed_kubeflow_chisme.lightkube.batch import delete_many
 from charmed_kubeflow_chisme.pebble import update_layer
-from charmhelpers.core import hookenv
 from charms.observability_libs.v1.kubernetes_service_patch import KubernetesServicePatch
 from lightkube import ApiError
 from lightkube.generic_resource import load_in_cluster_generic_resources
@@ -53,7 +52,7 @@ class AdmissionWebhookCharm(CharmBase):
         self._exec_command = "/webhook"
         self._namespace = self.model.name
         self._name = self.model.app.name
-        self._service_name = hookenv.service_name()
+        self._service_name = self._name
         self._k8s_resource_handler = None
         self._crd_resource_handler = None
 
@@ -68,17 +67,22 @@ class AdmissionWebhookCharm(CharmBase):
         # generate certs
         self._gen_certs_if_missing()
 
-        # setup context to be used for updating K8S resources
-        self._context = {
+        port = ServicePort(int(self._port), name=f"{self.app.name}")
+        self.service_patcher = KubernetesServicePatch(
+            self,
+            [port],
+            service_name=f"{self.model.app.name}",
+        )
+
+    @property
+    def _context(self):
+        return {
             "app_name": self._name,
             "namespace": self._namespace,
             "port": self._port,
             "ca_bundle": b64encode(self._cert_ca.encode("ascii")).decode("utf-8"),
             "service_name": self._service_name,
         }
-
-        port = ServicePort(int(self._port), name=f"{self.app.name}")
-        self.service_patcher = KubernetesServicePatch(self, [port])
 
     @property
     def container(self):
@@ -300,6 +304,8 @@ class AdmissionWebhookCharm(CharmBase):
         except ErrorWithStatus as err:
             self.model.unit.status = err.status
             self.logger.error(f"Failed to handle {event} with error: {err}")
+            return
+
         self.model.unit.status = ActiveStatus()
 
 
