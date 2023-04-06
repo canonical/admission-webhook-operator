@@ -29,6 +29,20 @@ jobs:
     - name: Lint code
       run: tox -vve lint
 
+  unit:
+    name: Unit Test
+    runs-on: ubuntu-20.04
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Install dependencies
+      run: sudo apt-get install python3-pip tox
+
+    - name: Run unit tests
+      run: tox -e unit
+  
   integration:
     name: Integration Tests
     runs-on: ubuntu-20.04
