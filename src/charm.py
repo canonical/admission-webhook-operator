@@ -224,7 +224,9 @@ class AdmissionWebhookCharm(CharmBase):
             self.model.unit.status = error.status
             return
 
-        self.container.push(Path(f"{CONTAINER_CERTS_DEST}/key.pem"), self._cert_key, make_dirs=True)
+        self.container.push(
+            Path(f"{CONTAINER_CERTS_DEST}/key.pem"), self._cert_key, make_dirs=True
+        )
         self.container.push(Path(f"{CONTAINER_CERTS_DEST}/cert.pem"), self._cert, make_dirs=True)
 
     def _check_container_connection(self, container: Container) -> None:
