@@ -133,6 +133,7 @@ class AdmissionWebhookCharm(CharmBase):
                     "summary": "Pebble service for admission-webhook-operator",
                     "startup": "enabled",
                     "command": self._exec_command,
+                    "on-check-failure": {"admission-webhook-up": "restart"},
                 },
             },
             "checks": {
