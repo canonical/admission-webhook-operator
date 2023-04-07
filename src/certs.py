@@ -82,6 +82,7 @@ def gen_certs(model: str, service_name: str):
         }
 
         # cleanup temporary files
-        check_call(["rm", "-f", tmp_path / "cert-gen-*"])
+        for file in tmp_path.glob("cert-gen-*"):
+            file.unlink()
 
     return ret_certs
