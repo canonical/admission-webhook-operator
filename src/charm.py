@@ -18,8 +18,8 @@ from lightkube.models.core_v1 import ServicePort
 from ops.charm import CharmBase
 from ops.framework import StoredState
 from ops.main import main
-from ops.model import ActiveStatus, Container, MaintenanceStatus, WaitingStatus, ModelError
-from ops.pebble import Layer, CheckStatus
+from ops.model import ActiveStatus, Container, MaintenanceStatus, ModelError, WaitingStatus
+from ops.pebble import CheckStatus, Layer
 
 from certs import gen_certs
 
