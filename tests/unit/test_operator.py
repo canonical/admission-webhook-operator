@@ -4,8 +4,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from ops.model import ActiveStatus, MaintenanceStatus, WaitingStatus
-from ops.testing import Harness
 from ops.pebble import CheckStatus
+from ops.testing import Harness
 
 from charm import AdmissionWebhookCharm
 
@@ -100,6 +100,8 @@ class TestCharm:
 
     @patch("charm.KubernetesServicePatch", lambda x, y, service_name: None)
     @patch("charm.AdmissionWebhookCharm._get_check_status")
+    @patch("charm.AdmissionWebhookCharm.k8s_resource_handler")
+    @patch("charm.AdmissionWebhookCharm.crd_resource_handler")
     @pytest.mark.parametrize(
         "health_check_status, charm_status",
         [
@@ -109,6 +111,8 @@ class TestCharm:
     )
     def test_update_status(
         self,
+        crd_resource_handler: MagicMock,
+        k8s_resource_handler: MagicMock,
         _get_check_status: MagicMock,
         health_check_status,
         charm_status,
