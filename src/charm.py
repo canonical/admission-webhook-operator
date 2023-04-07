@@ -129,7 +129,7 @@ class AdmissionWebhookCharm(CharmBase):
             "services": {
                 self._container_name: {
                     "override": "replace",
-                    "summary": "Entry point of admission-webhook-operator image",
+                    "summary": "Pebble service for admission-webhook-operator",
                     "startup": "enabled",
                     "command": self._exec_command,
                 },
