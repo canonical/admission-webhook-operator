@@ -13,11 +13,12 @@ def gen_certs(model: str, service_name: str):
     ssl_conf = ssl_conf.replace("{{ service_name }}", str(service_name))
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-        Path(tmp_dir + "/ssl.conf").write_text(ssl_conf)
+        tmp_path = Path(tmp_dir)
+        (tmp_path / "ssl.conf").write_text(ssl_conf)
 
         # execute OpenSSL commands
-        check_call(["openssl", "genrsa", "-out", tmp_dir + "/ca.key", "2048"])
-        check_call(["openssl", "genrsa", "-out", tmp_dir + "/server.key", "2048"])
+        check_call(["openssl", "genrsa", "-out", tmp_path / "ca.key", "2048"])
+        check_call(["openssl", "genrsa", "-out", tmp_path / "server.key", "2048"])
         check_call(
             [
                 "openssl",
@@ -29,11 +30,11 @@ def gen_certs(model: str, service_name: str):
                 "-days",
                 "3650",
                 "-key",
-                tmp_dir + "/ca.key",
+                tmp_path / "ca.key",
                 "-subj",
                 "/CN=127.0.0.1",
                 "-out",
-                tmp_dir + "/ca.crt",
+                tmp_path / "ca.crt",
             ]
         )
         check_call(
@@ -43,11 +44,11 @@ def gen_certs(model: str, service_name: str):
                 "-new",
                 "-sha256",
                 "-key",
-                tmp_dir + "/server.key",
+                tmp_path / "server.key",
                 "-out",
-                tmp_dir + "/server.csr",
+                tmp_path / "server.csr",
                 "-config",
-                tmp_dir + "/ssl.conf",
+                tmp_path / "ssl.conf",
             ]
         )
         check_call(
@@ -57,30 +58,30 @@ def gen_certs(model: str, service_name: str):
                 "-req",
                 "-sha256",
                 "-in",
-                tmp_dir + "/server.csr",
+                tmp_path / "server.csr",
                 "-CA",
-                tmp_dir + "/ca.crt",
+                tmp_path / "ca.crt",
                 "-CAkey",
-                tmp_dir + "/ca.key",
+                tmp_path / "ca.key",
                 "-CAcreateserial",
                 "-out",
-                tmp_dir + "/cert.pem",
+                tmp_path / "cert.pem",
                 "-days",
                 "365",
                 "-extensions",
                 "v3_ext",
                 "-extfile",
-                tmp_dir + "/ssl.conf",
+                tmp_path / "ssl.conf",
             ]
         )
 
         ret_certs = {
-            "cert": Path(tmp_dir + "/cert.pem").read_text(),
-            "key": Path(tmp_dir + "/server.key").read_text(),
-            "ca": Path(tmp_dir + "/ca.crt").read_text(),
+            "cert": (tmp_path / "cert.pem").read_text(),
+            "key": (tmp_path / "server.key").read_text(),
+            "ca": (tmp_path / "ca.crt").read_text(),
         }
 
         # cleanup temporary files
-        check_call(["rm", "-f", tmp_dir + "/cert-gen-*"])
+        check_call(["rm", "-f", tmp_path / "cert-gen-*"])
 
     return ret_certs
