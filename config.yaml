@@ -2,6 +2,6 @@
 # See LICENSE file for licensing details.
 options:
   port:
-    type: string
-    default: '4443'
+    type: int
+    default: 4443
     description: Webhook server port
