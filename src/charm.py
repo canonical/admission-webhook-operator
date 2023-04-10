@@ -18,8 +18,8 @@ from lightkube.models.core_v1 import ServicePort
 from ops.charm import CharmBase
 from ops.framework import StoredState
 from ops.main import main
-from ops.model import ActiveStatus, Container, MaintenanceStatus, WaitingStatus
-from ops.pebble import Layer
+from ops.model import ActiveStatus, Container, MaintenanceStatus, ModelError, WaitingStatus
+from ops.pebble import CheckStatus, Layer
 
 from certs import gen_certs
 
@@ -64,6 +64,7 @@ class AdmissionWebhookCharm(CharmBase):
         self.framework.observe(self.on.install, self._on_install)
         self.framework.observe(self.on.upgrade_charm, self._on_upgrade)
         self.framework.observe(self.on.remove, self._on_remove)
+        self.framework.observe(self.on.update_status, self._on_update_status)
 
         # generate certs
         self._gen_certs_if_missing()
@@ -132,7 +133,17 @@ class AdmissionWebhookCharm(CharmBase):
                     "summary": "Pebble service for admission-webhook-operator",
                     "startup": "enabled",
                     "command": self._exec_command,
+                    "on-check-failure": {"admission-webhook-up": "restart"},
                 },
+            },
+            "checks": {
+                "admission-webhook-up": {
+                    "override": "replace",
+                    "period": "30s",
+                    "timeout": "20s",
+                    "threshold": 4,
+                    "tcp": {"port": self._port},
+                }
             },
         }
         return Layer(layer_config)
@@ -238,6 +249,25 @@ class AdmissionWebhookCharm(CharmBase):
             self.logger.warning("Connection cannot be established with container")
             raise ErrorWithStatus("Pod startup is not complete", MaintenanceStatus)
 
+    def _get_check_status(self):
+        return self.container.get_check("admission-webhook-up").status
+
+    def _refresh_status(self):
+        """Check status of workload and set status accordingly."""
+        try:
+            check = self._get_check_status()
+        except ModelError as error:
+            raise GenericCharmRuntimeError(
+                "Failed to run health check on workload container"
+            ) from error
+        if check != CheckStatus.UP:
+            self.logger.error(
+                f"Container {self._container_name} failed health check. It will be restarted."
+            )
+            raise ErrorWithStatus("Workload failed health check", MaintenanceStatus)
+        else:
+            self.model.unit.status = ActiveStatus()
+
     def _on_install(self, _):
         """Installation only tasks."""
         # deploy K8S resources to speed up deployment
@@ -281,6 +311,16 @@ class AdmissionWebhookCharm(CharmBase):
         """Perform upgrade steps."""
         # force conflict resolution in K8S resources update
         self._on_event(_, force_conflicts=True)
+
+    def _on_update_status(self, event):
+        """Update status actions."""
+        self._on_event(event)
+
+        try:
+            self._refresh_status()
+        except ErrorWithStatus as err:
+            self.model.unit.status = err.status
+            self.logger.error(f"Failed to handle {event} with error: {err}")
 
     def _on_event(self, event, force_conflicts: bool = False) -> None:
         """Perform all required actions for the Charm.

@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from ops.model import ActiveStatus, MaintenanceStatus, WaitingStatus
+from ops.pebble import CheckStatus
 from ops.testing import Harness
 
 from charm import AdmissionWebhookCharm
@@ -96,6 +97,40 @@ class TestCharm:
         crd_resource_handler.apply.assert_called()
         k8s_resource_handler.apply.assert_called()
         assert isinstance(harness.charm.model.unit.status, MaintenanceStatus)
+
+    @patch("charm.KubernetesServicePatch", lambda x, y, service_name: None)
+    @patch("charm.AdmissionWebhookCharm._get_check_status")
+    @patch("charm.AdmissionWebhookCharm.k8s_resource_handler")
+    @patch("charm.AdmissionWebhookCharm.crd_resource_handler")
+    @pytest.mark.parametrize(
+        "health_check_status, charm_status",
+        [
+            (CheckStatus.UP, ActiveStatus("")),
+            (CheckStatus.DOWN, MaintenanceStatus("Workload failed health check")),
+        ],
+    )
+    def test_update_status(
+        self,
+        crd_resource_handler: MagicMock,
+        k8s_resource_handler: MagicMock,
+        _get_check_status: MagicMock,
+        health_check_status,
+        charm_status,
+        harness: Harness,
+    ):
+        """
+        Test update status handler.
+        Check on the correct charm status when health check status is UP/DOWN.
+        """
+        harness.set_leader(True)
+        harness.begin_with_initial_hooks()
+        harness.container_pebble_ready("admission-webhook")
+
+        _get_check_status.return_value = health_check_status
+
+        # test successful update status
+        harness.charm.on.update_status.emit()
+        assert harness.charm.model.unit.status == charm_status
 
     @patch("charm.KubernetesServicePatch", lambda x, y, service_name: None)
     @pytest.mark.parametrize(
