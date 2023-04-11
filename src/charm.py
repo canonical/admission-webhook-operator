@@ -254,6 +254,7 @@ class AdmissionWebhookCharm(CharmBase):
 
     def _refresh_status(self):
         """Check status of workload and set status accordingly."""
+        self._check_leader()
         try:
             check = self._get_check_status()
         except ModelError as error:
@@ -320,7 +321,6 @@ class AdmissionWebhookCharm(CharmBase):
             self._refresh_status()
         except ErrorWithStatus as err:
             self.model.unit.status = err.status
-            self.logger.error(f"Failed to handle {event} with error: {err}")
 
     def _on_event(self, event, force_conflicts: bool = False) -> None:
         """Perform all required actions for the Charm.
