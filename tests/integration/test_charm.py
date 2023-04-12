@@ -13,15 +13,16 @@ from lightkube import ApiError, Client, codecs
 from lightkube.generic_resource import create_namespaced_resource
 from lightkube.resources.apiextensions_v1 import CustomResourceDefinition
 from lightkube.resources.core_v1 import Namespace, Pod, Service
+from lightkube.resources.rbac_authorization_v1 import ClusterRole
 from pytest_operator.plugin import OpsTest
 from tenacity import retry, stop_after_delay, wait_exponential
-from lightkube.resources.rbac_authorization_v1 import ClusterRole
 
 log = logging.getLogger(__name__)
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
 CHARM_LOCATION = None
+
 
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy(ops_test: OpsTest):
@@ -150,6 +151,7 @@ async def test_remove_with_resources_present(ops_test: OpsTest):
             # other error than Not Found
             assert False
 
+
 @pytest.mark.abort_on_fail
 async def test_upgrade(ops_test: OpsTest):
     """Test upgrade.
@@ -207,4 +209,3 @@ async def test_upgrade(ops_test: OpsTest):
     for rule in cluster_role.rules:
         if rule.apiGroups == "kubeflow.org":
             assert "poddefaults" in rule.resources
-
