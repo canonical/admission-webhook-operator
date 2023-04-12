@@ -136,7 +136,6 @@ async def test_remove_with_resources_present(ops_test: OpsTest):
         labels=[("app.juju.is/created-by", "admission-webhook")],
         namespace=ops_test.model.name,
     )
-    log.info(list(crd_list))
     assert not list(crd_list)
 
     # verify that Service is removed
