@@ -40,6 +40,8 @@ metadata:
   labels:
     rbac.authorization.kubeflow.org/aggregate-to-kubeflow-admin: "true"
   name: admission-webhook-kubeflow-poddefaults-admin
+# Commenting out rules: [] due to https://github.com/gtsystem/lightkube/issues/32
+#rules: []
 ---
 aggregationRule:
   clusterRoleSelectors:
@@ -51,6 +53,8 @@ metadata:
   labels:
     rbac.authorization.kubeflow.org/aggregate-to-kubeflow-edit: "true"
   name: admission-webhook-kubeflow-poddefaults-edit
+# Commenting out rules: [] due to https://github.com/gtsystem/lightkube/issues/32
+#rules: []
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
