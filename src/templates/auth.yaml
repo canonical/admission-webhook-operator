@@ -2,7 +2,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ app_name }}
+  name: admission-webhook
 rules:
 - apiGroups:
   - kubeflow.org
@@ -20,15 +20,15 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ app_name }}
+  name: admission-webhook
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: {{ app_name }}
+  name: admission-webhook
 subjects:
 - kind: ServiceAccount
-  name: {{ app_name }}
-  namespace: {{ namespace }}
+  name: admission-webhook
+  namespace: testting
 ---
 aggregationRule:
   clusterRoleSelectors:
