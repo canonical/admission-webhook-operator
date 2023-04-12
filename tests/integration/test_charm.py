@@ -15,12 +15,13 @@ from lightkube.resources.apiextensions_v1 import CustomResourceDefinition
 from lightkube.resources.core_v1 import Namespace, Pod, Service
 from pytest_operator.plugin import OpsTest
 from tenacity import retry, stop_after_delay, wait_exponential
+from lightkube.resources.rbac_authorization_v1 import ClusterRole
 
 log = logging.getLogger(__name__)
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
-
+CHARM_LOCATION = None
 
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy(ops_test: OpsTest):
@@ -35,6 +36,10 @@ async def test_build_and_deploy(ops_test: OpsTest):
         resources=resources,
         trust=True,
     )
+
+    # store charm location in global to be used in other tests
+    global CHARM_LOCATION
+    CHARM_LOCATION = built_charm_path
 
 
 async def test_is_active(ops_test: OpsTest):
@@ -130,6 +135,7 @@ async def test_remove_with_resources_present(ops_test: OpsTest):
         labels=[("app.juju.is/created-by", "admission-webhook")],
         namespace=ops_test.model.name,
     )
+    log.info(list(crd_list))
     assert not list(crd_list)
 
     # verify that Service is removed
@@ -143,3 +149,62 @@ async def test_remove_with_resources_present(ops_test: OpsTest):
         if error.status.code != 404:
             # other error than Not Found
             assert False
+
+@pytest.mark.abort_on_fail
+async def test_upgrade(ops_test: OpsTest):
+    """Test upgrade.
+    Verify that all upgrade process succeeds.
+    There should be no charm with APP_NAME deployed (after test_remove_with_resources_present()),
+    because it deploys stable version of this charm and peforms upgrade.
+    """
+
+    # deploy stable version of the charm
+    await ops_test.model.deploy(entity_url=APP_NAME, channel="1.6/stable", trust=True)
+    await ops_test.model.wait_for_idle(
+        apps=[APP_NAME], status="active", raise_on_blocked=True, timeout=60 * 10
+    )
+
+    # refresh (upgrade) using charm built in test_build_and_deploy()
+    image_path = METADATA["resources"]["oci-image"]["upstream-source"]
+    await ops_test.model.applications[APP_NAME].refresh(
+        path=f"{CHARM_LOCATION}", resources={"oci-image": image_path}
+    )
+    await ops_test.model.wait_for_idle(
+        apps=[APP_NAME], status="active", raise_on_blocked=True, timeout=60 * 10
+    )
+
+    # verify that all CRDs are installed
+    lightkube_client = lightkube.Client()
+    crd_list = lightkube_client.list(
+        CustomResourceDefinition,
+        labels=[("app.juju.is/created-by", "admission-webhook")],
+        namespace=ops_test.model.name,
+    )
+    # testing for non empty list (iterator)
+    _last = object()
+    assert not next(crd_list, _last) is _last
+
+    # check that all CRDs are installed and versions are correct
+    test_crd_list = []
+    for crd in yaml.safe_load_all(Path("./src/templates/crds.yaml.j2").read_text()):
+        test_crd_list.append(
+            (
+                crd["metadata"]["name"],
+                crd["metadata"]["annotations"]["controller-gen.kubebuilder.io/version"],
+            )
+        )
+    for crd in crd_list:
+        assert (
+            (crd.metadata.name, crd.metadata.annotations["controller-gen.kubebuilder.io/version"])
+        ) in test_crd_list
+
+    # verify that if ClusterRole is installed and parameters are correct
+    cluster_role = lightkube_client.get(
+        ClusterRole,
+        name=APP_NAME,
+        namespace=ops_test.model.name,
+    )
+    for rule in cluster_role.rules:
+        if rule.apiGroups == "kubeflow.org":
+            assert "poddefaults" in rule.resources
+
