@@ -40,7 +40,6 @@ metadata:
   labels:
     rbac.authorization.kubeflow.org/aggregate-to-kubeflow-admin: "true"
   name: admission-webhook-kubeflow-poddefaults-admin
-rules: []
 ---
 aggregationRule:
   clusterRoleSelectors:
@@ -52,7 +51,6 @@ metadata:
   labels:
     rbac.authorization.kubeflow.org/aggregate-to-kubeflow-edit: "true"
   name: admission-webhook-kubeflow-poddefaults-edit
-rules: []
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
