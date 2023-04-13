@@ -285,14 +285,14 @@ class AdmissionWebhookCharm(CharmBase):
         except ApiError as error:
             # do not log/report when resources were not found
             if error.status.code != 404:
-                self.logger.error(f"Failed to delete CRD resources, with error: {error}")
+                self.logger.error(f"Failed to delete K8S resources, with error: {error}")
                 delete_error = error
         try:
             delete_many(self.crd_resource_handler.lightkube_client, crd_resources_manifests)
         except ApiError as error:
             # do not log/report when resources were not found
             if error.status.code != 404:
-                self.logger.error(f"Failed to delete K8S resources, with error: {error}")
+                self.logger.error(f"Failed to delete CRD resources, with error: {error}")
                 delete_error = error
 
         if delete_error is not None:
