@@ -253,7 +253,7 @@ class AdmissionWebhookCharm(CharmBase):
         return self.container.get_check("admission-webhook-up").status
 
     def _refresh_status(self):
-        """Check status of workload and set status accordingly."""
+        """Check leader, refresh status of workload, and set status accordingly."""
         self._check_leader()
         try:
             check = self._get_check_status()
@@ -315,8 +315,6 @@ class AdmissionWebhookCharm(CharmBase):
 
     def _on_update_status(self, event):
         """Update status actions."""
-        self._on_event(event)
-
         try:
             self._refresh_status()
         except ErrorWithStatus as err:
