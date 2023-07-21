@@ -4,7 +4,7 @@
 #
 #    pip-compile --resolver=backtracking requirements-unit.in
 #
-anyio==3.7.0
+anyio==3.7.1
     # via
     #   -r requirements.txt
     #   httpcore
@@ -21,7 +21,7 @@ deepdiff==6.2.1
     # via
     #   -r requirements.txt
     #   charmed-kubeflow-chisme
-exceptiongroup==1.1.1
+exceptiongroup==1.1.2
     # via
     #   -r requirements.txt
     #   anyio
@@ -30,7 +30,7 @@ h11==0.14.0
     # via
     #   -r requirements.txt
     #   httpcore
-httpcore==0.17.2
+httpcore==0.17.3
     # via
     #   -r requirements.txt
     #   httpx
@@ -61,7 +61,7 @@ markupsafe==2.1.3
     # via
     #   -r requirements.txt
     #   jinja2
-ops==2.3.0
+ops==2.4.1
     # via
     #   -r requirements.txt
     #   charmed-kubeflow-chisme
@@ -71,23 +71,23 @@ ordered-set==4.1.0
     #   deepdiff
 packaging==23.1
     # via pytest
-pluggy==1.0.0
+pluggy==1.2.0
     # via pytest
-pytest==7.3.2
+pytest==7.4.0
     # via
     #   -r requirements-unit.in
     #   pytest-lazy-fixture
     #   pytest-mock
 pytest-lazy-fixture==0.6.3
     # via -r requirements-unit.in
-pytest-mock==3.10.0
+pytest-mock==3.11.1
     # via -r requirements-unit.in
 pyyaml==6.0
     # via
     #   -r requirements.txt
     #   lightkube
     #   ops
-ruamel-yaml==0.17.31
+ruamel-yaml==0.17.32
     # via
     #   -r requirements.txt
     #   charmed-kubeflow-chisme
@@ -107,7 +107,7 @@ tenacity==8.2.2
     #   charmed-kubeflow-chisme
 tomli==2.0.1
     # via pytest
-websocket-client==1.5.3
+websocket-client==1.6.1
     # via
     #   -r requirements.txt
     #   ops
