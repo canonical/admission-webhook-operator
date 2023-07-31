@@ -2,6 +2,5 @@
 # See LICENSE file for licensing details.
 charmed-kubeflow-chisme
 lightkube
-lightkube-models
 ops
 pyyaml
