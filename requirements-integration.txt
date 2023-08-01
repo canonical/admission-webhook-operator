@@ -95,7 +95,7 @@ oauthlib==3.2.2
     # via
     #   kubernetes
     #   requests-oauthlib
-ops==2.4.1
+ops==2.5.0
     # via charmed-kubeflow-chisme
 ordered-set==4.1.0
     # via deepdiff
