@@ -2,6 +2,7 @@
 
 from unittest.mock import MagicMock, patch
 
+import ops
 import pytest
 from charmed_kubeflow_chisme.exceptions import ErrorWithStatus
 from ops.model import ActiveStatus, MaintenanceStatus, WaitingStatus
@@ -133,12 +134,17 @@ class TestCharm:
         harness.charm.on.update_status.emit()
         assert harness.charm.model.unit.status == charm_status
 
-    def test_upload_certs_to_container_defer(self, mocked_check_container_connection, harness):
+    @patch("charm.KubernetesServicePatch", lambda x, y, service_name: None)
+    def test_upload_certs_to_container_defer(self, harness):
         """Checks the event is deferred if container is not reachable."""
-        harness.charm.logger = MagicMock()
         harness.set_can_connect("admission-webhook", False)
-        with pytest.raises(ErrorWithStatus) as err:
-            harness.charm._upload_certs_to_container
+        harness.begin()
+
+        # Mock the event
+        mocked_event = MagicMock(spec=ops.HookEvent)
+
+        harness.charm._upload_certs_to_container(mocked_event)
+        mocked_event.defer.assert_called_once()
 
     @patch("charm.KubernetesServicePatch", lambda x, y, service_name: None)
     @pytest.mark.parametrize(
