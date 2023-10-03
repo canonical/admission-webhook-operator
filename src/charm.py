@@ -233,6 +233,7 @@ class AdmissionWebhookCharm(CharmBase):
             self._check_container_connection(self.container)
         except ErrorWithStatus as error:
             self.model.unit.status = error.status
+            self.logger.warning("Cannot upload certificates to container, deferring")
             event.defer()
             return
 
