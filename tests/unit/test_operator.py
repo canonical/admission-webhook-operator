@@ -4,7 +4,6 @@ from unittest.mock import MagicMock, patch
 
 import ops
 import pytest
-from charmed_kubeflow_chisme.exceptions import ErrorWithStatus
 from ops.model import ActiveStatus, MaintenanceStatus, WaitingStatus
 from ops.pebble import CheckStatus
 from ops.testing import Harness
