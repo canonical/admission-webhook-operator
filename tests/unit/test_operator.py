@@ -2,6 +2,7 @@
 
 from unittest.mock import MagicMock, patch
 
+import ops
 import pytest
 from ops.model import ActiveStatus, MaintenanceStatus, WaitingStatus
 from ops.pebble import CheckStatus
@@ -131,6 +132,18 @@ class TestCharm:
         # test successful update status
         harness.charm.on.update_status.emit()
         assert harness.charm.model.unit.status == charm_status
+
+    @patch("charm.KubernetesServicePatch", lambda x, y, service_name: None)
+    def test_upload_certs_to_container_defer(self, harness):
+        """Checks the event is deferred if container is not reachable."""
+        harness.set_can_connect("admission-webhook", False)
+        harness.begin()
+
+        # Mock the event
+        mocked_event = MagicMock(spec=ops.HookEvent)
+
+        harness.charm._upload_certs_to_container(mocked_event)
+        mocked_event.defer.assert_called_once()
 
     @patch("charm.KubernetesServicePatch", lambda x, y, service_name: None)
     @pytest.mark.parametrize(

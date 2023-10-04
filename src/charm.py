@@ -227,12 +227,14 @@ class AdmissionWebhookCharm(CharmBase):
         for k, v in certs.items():
             setattr(self._stored, k, v)
 
-    def _upload_certs_to_container(self):
+    def _upload_certs_to_container(self, event):
         """Upload generated certs to container."""
         try:
             self._check_container_connection(self.container)
         except ErrorWithStatus as error:
             self.model.unit.status = error.status
+            self.logger.warning("Cannot upload certificates to container, deferring")
+            event.defer()
             return
 
         self.container.push(CONTAINER_CERTS_DEST / "key.pem", self._cert_key, make_dirs=True)
@@ -303,7 +305,7 @@ class AdmissionWebhookCharm(CharmBase):
     def _on_pebble_ready(self, event):
         """Configure started container."""
         # upload certs to container
-        self._upload_certs_to_container()
+        self._upload_certs_to_container(event)
 
         # proceed with other actions
         self._on_event(event)
