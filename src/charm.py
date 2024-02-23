@@ -2,7 +2,6 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 """A Juju Charm for Admission Webhook Operator."""
-
 import logging
 from base64 import b64encode
 from pathlib import Path
@@ -19,7 +18,7 @@ from ops.charm import CharmBase
 from ops.framework import StoredState
 from ops.main import main
 from ops.model import ActiveStatus, Container, MaintenanceStatus, ModelError, WaitingStatus
-from ops.pebble import CheckStatus, Layer
+from ops.pebble import CheckStatus, Layer, PathError
 
 from certs import gen_certs
 
@@ -322,6 +321,16 @@ class AdmissionWebhookCharm(CharmBase):
         except ErrorWithStatus as err:
             self.model.unit.status = err.status
 
+    def _certificate_files_exist(self) -> bool:
+        """Check that the certificate and key files can be pulled from the container."""
+        try:
+            self.container.pull(CONTAINER_CERTS_DEST / "key.pem")
+            self.container.pull(CONTAINER_CERTS_DEST / "cert.pem")
+        except PathError:
+            return False
+        else:
+            return True
+
     def _on_event(self, event, force_conflicts: bool = False) -> None:
         """Perform all required actions for the Charm.
 
@@ -332,12 +341,17 @@ class AdmissionWebhookCharm(CharmBase):
         try:
             self._check_leader()
             self._apply_k8s_resources(force_conflicts=force_conflicts)
-            update_layer(
-                self._container_name,
-                self._container,
-                self._admission_webhook_layer,
-                self.logger,
-            )
+            if self._certificate_files_exist():
+                update_layer(
+                    self._container_name,
+                    self._container,
+                    self._admission_webhook_layer,
+                    self.logger,
+                )
+            else:
+                self.logger.info(
+                    "Certificate files not found, skipping updating the Pebble layer."
+                )
         except ErrorWithStatus as err:
             self.model.unit.status = err.status
             self.logger.error(f"Failed to handle {event} with error: {err}")
