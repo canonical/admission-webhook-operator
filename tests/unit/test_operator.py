@@ -191,3 +191,27 @@ class TestCharm:
 
         # Assert that we have/have not called refresh_certs, as expected
         assert mocked_gen_certs.called == should_certs_refresh
+
+    @patch("charm.update_layer")
+    @patch("charm.KubernetesServicePatch", lambda x, y, service_name: None)
+    @pytest.mark.parametrize(
+        "cert_files_exist, update_layer_calls",
+        [
+            (True, 1),
+            (False, 0),
+        ],
+    )
+    def test_update_layer_called(
+        self, mocked_update_layer, cert_files_exist, update_layer_calls, harness: Harness
+    ):
+        """
+        Tests whether chisme's _update_layer is:
+        * called once when the certificate files are available in the container.
+        * not called when he certificate files are NOT available in the container.
+        """
+        harness.set_leader(True)
+        harness.begin()
+        harness.charm._certificate_files_exist = MagicMock(return_value=cert_files_exist)
+        harness.container_pebble_ready("admission-webhook")
+
+        assert mocked_update_layer.call_count == update_layer_calls

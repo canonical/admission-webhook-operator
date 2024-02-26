@@ -235,7 +235,6 @@ class AdmissionWebhookCharm(CharmBase):
             self.logger.warning("Cannot upload certificates to container, deferring")
             event.defer()
             return
-
         self.container.push(CONTAINER_CERTS_DEST / "key.pem", self._cert_key, make_dirs=True)
         self.container.push(CONTAINER_CERTS_DEST / "cert.pem", self._cert, make_dirs=True)
 
@@ -349,7 +348,7 @@ class AdmissionWebhookCharm(CharmBase):
                     self.logger,
                 )
             else:
-                self.logger.info(
+                self.logger.warning(
                     "Certificate files not found, skipping updating the Pebble layer."
                 )
         except ErrorWithStatus as err:
