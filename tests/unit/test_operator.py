@@ -194,6 +194,8 @@ class TestCharm:
 
     @patch("charm.update_layer")
     @patch("charm.KubernetesServicePatch", lambda x, y, service_name: None)
+    @patch("charm.AdmissionWebhookCharm.k8s_resource_handler")
+    @patch("charm.AdmissionWebhookCharm.crd_resource_handler")
     @pytest.mark.parametrize(
         "cert_files_exist, update_layer_calls",
         [
@@ -202,7 +204,13 @@ class TestCharm:
         ],
     )
     def test_update_layer_called(
-        self, mocked_update_layer, cert_files_exist, update_layer_calls, harness: Harness
+        self,
+        crd_resource_handler: MagicMock,
+        k8s_resource_handler: MagicMock,
+        mocked_update_layer,
+        cert_files_exist,
+        update_layer_calls,
+        harness: Harness,
     ):
         """
         Tests whether chisme's _update_layer is:
