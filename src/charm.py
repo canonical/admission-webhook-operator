@@ -2,7 +2,6 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 """A Juju Charm for Admission Webhook Operator."""
-
 import logging
 from base64 import b64encode
 from pathlib import Path
@@ -19,7 +18,7 @@ from ops.charm import CharmBase
 from ops.framework import StoredState
 from ops.main import main
 from ops.model import ActiveStatus, Container, MaintenanceStatus, ModelError, WaitingStatus
-from ops.pebble import CheckStatus, Layer
+from ops.pebble import CheckStatus, Layer, PathError
 
 from certs import gen_certs
 
@@ -58,10 +57,13 @@ class AdmissionWebhookCharm(CharmBase):
         self._crd_resource_handler = None
 
         # setup events to be handled by main event handler
-        self.framework.observe(self.on.config_changed, self._on_event)
-        self.framework.observe(self.on.admission_webhook_pebble_ready, self._on_pebble_ready)
+        for event in [
+            self.on.install,
+            self.on.config_changed,
+            self.on.admission_webhook_pebble_ready,
+        ]:
+            self.framework.observe(event, self._on_event)
         # setup events to be handled by specific event handlers
-        self.framework.observe(self.on.install, self._on_install)
         self.framework.observe(self.on.upgrade_charm, self._on_upgrade)
         self.framework.observe(self.on.remove, self._on_remove)
         self.framework.observe(self.on.update_status, self._on_update_status)
@@ -232,13 +234,16 @@ class AdmissionWebhookCharm(CharmBase):
         try:
             self._check_container_connection(self.container)
         except ErrorWithStatus as error:
-            self.model.unit.status = error.status
-            self.logger.warning("Cannot upload certificates to container, deferring")
-            event.defer()
-            return
-
-        self.container.push(CONTAINER_CERTS_DEST / "key.pem", self._cert_key, make_dirs=True)
-        self.container.push(CONTAINER_CERTS_DEST / "cert.pem", self._cert, make_dirs=True)
+            self.logger.warning("Cannot upload certificates: Failed to connect with container")
+            raise error
+        if not self._certificate_files_exist():
+            try:
+                self.container.push(
+                    CONTAINER_CERTS_DEST / "key.pem", self._cert_key, make_dirs=True
+                )
+                self.container.push(CONTAINER_CERTS_DEST / "cert.pem", self._cert, make_dirs=True)
+            except PathError as e:
+                raise GenericCharmRuntimeError("Failed to push certs to container") from e
 
     def _check_container_connection(self, container: Container) -> None:
         """Check if connection can be made with container.
@@ -271,11 +276,6 @@ class AdmissionWebhookCharm(CharmBase):
         else:
             self.model.unit.status = ActiveStatus()
 
-    def _on_install(self, _):
-        """Installation only tasks."""
-        # deploy K8S resources to speed up deployment
-        self._apply_k8s_resources()
-
     def _on_remove(self, _):
         """Remove all resources."""
         delete_error = None
@@ -302,14 +302,6 @@ class AdmissionWebhookCharm(CharmBase):
 
         self.unit.status = MaintenanceStatus("K8S resources removed")
 
-    def _on_pebble_ready(self, event):
-        """Configure started container."""
-        # upload certs to container
-        self._upload_certs_to_container(event)
-
-        # proceed with other actions
-        self._on_event(event)
-
     def _on_upgrade(self, _):
         """Perform upgrade steps."""
         # force conflict resolution in K8S resources update
@@ -322,6 +314,15 @@ class AdmissionWebhookCharm(CharmBase):
         except ErrorWithStatus as err:
             self.model.unit.status = err.status
 
+    def _certificate_files_exist(self) -> bool:
+        """Check that the certificate and key files can be pulled from the container."""
+        try:
+            self.container.pull(CONTAINER_CERTS_DEST / "key.pem")
+            self.container.pull(CONTAINER_CERTS_DEST / "cert.pem")
+            return True
+        except PathError:
+            return False
+
     def _on_event(self, event, force_conflicts: bool = False) -> None:
         """Perform all required actions for the Charm.
 
@@ -332,6 +333,7 @@ class AdmissionWebhookCharm(CharmBase):
         try:
             self._check_leader()
             self._apply_k8s_resources(force_conflicts=force_conflicts)
+            self._upload_certs_to_container(event)
             update_layer(
                 self._container_name,
                 self._container,
