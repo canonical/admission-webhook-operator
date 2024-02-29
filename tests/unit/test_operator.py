@@ -133,8 +133,16 @@ class TestCharm:
         assert harness.charm.model.unit.status == charm_status
 
     @patch("charm.KubernetesServicePatch", lambda x, y, service_name: None)
+    @patch("charm.AdmissionWebhookCharm.k8s_resource_handler")
+    @patch("charm.AdmissionWebhookCharm.crd_resource_handler")
     @patch("charm.update_layer")
-    def test_container_not_reachable_install(self, mocked_update_layer, harness):
+    def test_container_not_reachable_install(
+        self,
+        mocked_update_layer,
+        crd_resource_handler: MagicMock,
+        k8s_resource_handler: MagicMock,
+        harness,
+    ):
         """
         Checks that when the container is not reachable and install hook fires:
         * unit status is set to MaintenanceStatus('Pod startup is not complete').
