@@ -2,7 +2,6 @@
 
 from unittest.mock import MagicMock, patch
 
-import ops
 import pytest
 from ops.model import ActiveStatus, MaintenanceStatus, WaitingStatus
 from ops.pebble import CheckStatus
@@ -134,16 +133,31 @@ class TestCharm:
         assert harness.charm.model.unit.status == charm_status
 
     @patch("charm.KubernetesServicePatch", lambda x, y, service_name: None)
-    def test_upload_certs_to_container_defer(self, harness):
-        """Checks the event is deferred if container is not reachable."""
+    @patch("charm.update_layer")
+    def test_container_not_reachable_install(self, mocked_update_layer, harness):
+        """
+        Checks that when the container is not reachable and install hook fires:
+        * unit status is set to MaintenanceStatus('Pod startup is not complete').
+        * a warning is logged with "Cannot upload certificates: Failed to connect with container".
+        * update_layer is not called.
+        """
+        # Arrange
+        harness.set_leader(True)
         harness.set_can_connect("admission-webhook", False)
         harness.begin()
 
-        # Mock the event
-        mocked_event = MagicMock(spec=ops.HookEvent)
+        # Mock the logger
+        harness.charm.logger = MagicMock()
 
-        harness.charm._upload_certs_to_container(mocked_event)
-        mocked_event.defer.assert_called_once()
+        # Act
+        harness.charm.on.install.emit()
+
+        # Assert
+        assert harness.charm.model.unit.status == MaintenanceStatus("Pod startup is not complete")
+        harness.charm.logger.warning.assert_called_with(
+            "Cannot upload certificates: Failed to connect with container"
+        )
+        mocked_update_layer.assert_not_called()
 
     @patch("charm.KubernetesServicePatch", lambda x, y, service_name: None)
     @pytest.mark.parametrize(
@@ -191,35 +205,3 @@ class TestCharm:
 
         # Assert that we have/have not called refresh_certs, as expected
         assert mocked_gen_certs.called == should_certs_refresh
-
-    @patch("charm.update_layer")
-    @patch("charm.KubernetesServicePatch", lambda x, y, service_name: None)
-    @patch("charm.AdmissionWebhookCharm.k8s_resource_handler")
-    @patch("charm.AdmissionWebhookCharm.crd_resource_handler")
-    @pytest.mark.parametrize(
-        "cert_files_exist, update_layer_calls",
-        [
-            (True, 1),
-            (False, 0),
-        ],
-    )
-    def test_update_layer_called(
-        self,
-        crd_resource_handler: MagicMock,
-        k8s_resource_handler: MagicMock,
-        mocked_update_layer,
-        cert_files_exist,
-        update_layer_calls,
-        harness: Harness,
-    ):
-        """
-        Tests whether chisme's _update_layer is:
-        * called once when the certificate files are available in the container.
-        * not called when he certificate files are NOT available in the container.
-        """
-        harness.set_leader(True)
-        harness.begin()
-        harness.charm._certificate_files_exist = MagicMock(return_value=cert_files_exist)
-        harness.container_pebble_ready("admission-webhook")
-
-        assert mocked_update_layer.call_count == update_layer_calls

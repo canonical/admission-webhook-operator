@@ -234,16 +234,16 @@ class AdmissionWebhookCharm(CharmBase):
         try:
             self._check_container_connection(self.container)
         except ErrorWithStatus as error:
-            self.model.unit.status = error.status
-            self.logger.warning("Cannot upload certificates to container, deferring")
-            event.defer()
-            return
-
-        try:
-            self.container.push(CONTAINER_CERTS_DEST / "key.pem", self._cert_key, make_dirs=True)
-            self.container.push(CONTAINER_CERTS_DEST / "cert.pem", self._cert, make_dirs=True)
-        except PathError as e:
-            raise GenericCharmRuntimeError("Failed to push certs to container") from e
+            self.logger.warning("Cannot upload certificates: Failed to connect with container")
+            raise error
+        if not self._certificate_files_exist():
+            try:
+                self.container.push(
+                    CONTAINER_CERTS_DEST / "key.pem", self._cert_key, make_dirs=True
+                )
+                self.container.push(CONTAINER_CERTS_DEST / "cert.pem", self._cert, make_dirs=True)
+            except PathError as e:
+                raise GenericCharmRuntimeError("Failed to push certs to container") from e
 
     def _check_container_connection(self, container: Container) -> None:
         """Check if connection can be made with container.
@@ -334,17 +334,12 @@ class AdmissionWebhookCharm(CharmBase):
             self._check_leader()
             self._apply_k8s_resources(force_conflicts=force_conflicts)
             self._upload_certs_to_container(event)
-            if self._certificate_files_exist():
-                update_layer(
-                    self._container_name,
-                    self._container,
-                    self._admission_webhook_layer,
-                    self.logger,
-                )
-            else:
-                self.logger.warning(
-                    "Certificate files not found, skipping updating the Pebble layer."
-                )
+            update_layer(
+                self._container_name,
+                self._container,
+                self._admission_webhook_layer,
+                self.logger,
+            )
         except ErrorWithStatus as err:
             self.model.unit.status = err.status
             self.logger.error(f"Failed to handle {event} with error: {err}")
