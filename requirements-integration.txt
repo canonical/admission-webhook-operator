@@ -6,6 +6,8 @@
 #
 anyio==4.2.0
     # via httpx
+appnope==0.1.4
+    # via ipython
 asttokens==2.4.1
     # via stack-data
 attrs==23.2.0
@@ -99,7 +101,7 @@ oauthlib==3.2.2
     # via
     #   kubernetes
     #   requests-oauthlib
-ops==2.9.0
+ops==2.14.0
     # via
     #   charmed-kubeflow-chisme
     #   serialized-data-interface
