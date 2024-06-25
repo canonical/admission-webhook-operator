@@ -55,7 +55,7 @@ jobs:
         provider: microk8s
         channel: 1.25-strict/stable
         charmcraft-channel: latest/candidate
-        juju-channel: 3.5/stable
+        juju-channel: 3.4/stable
 
     - name: Test
       run: |
