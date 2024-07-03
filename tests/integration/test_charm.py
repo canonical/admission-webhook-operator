@@ -9,6 +9,11 @@ import lightkube
 import pytest
 import yaml
 from charmed_kubeflow_chisme.lightkube.batch import apply_many
+from charmed_kubeflow_chisme.testing import (
+    GRAFANA_AGENT_APP,
+    assert_logging,
+    deploy_and_assert_grafana_agent,
+)
 from lightkube import ApiError, Client, codecs
 from lightkube.generic_resource import create_namespaced_resource
 from lightkube.resources.apiextensions_v1 import CustomResourceDefinition
@@ -35,6 +40,17 @@ async def test_build_and_deploy(ops_test: OpsTest):
         resources=resources,
         trust=True,
     )
+
+    # Deploying grafana-agent-k8s and add all relations
+    await deploy_and_assert_grafana_agent(
+        ops_test.model, APP_NAME, metrics=False, dashboard=False, logging=True
+    )
+
+
+async def test_logging(ops_test: OpsTest):
+    """Test logging is defined in relation data bag."""
+    app = ops_test.model.applications[GRAFANA_AGENT_APP]
+    await assert_logging(app)
 
 
 async def test_is_active(ops_test: OpsTest):

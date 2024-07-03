@@ -20,3 +20,7 @@ resources:
 provides:
   pod-defaults:
     interface: pod-defaults
+requires:
+  logging:
+    interface: loki_push_api
+    optional: true
