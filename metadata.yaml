@@ -16,7 +16,7 @@ resources:
     type: oci-image
     description: Backing OCI image
     auto-fetch: true
-    upstream-source: docker.io/kubeflownotebookswg/poddefaults-webhook:v1.9.0-rc.0
+    upstream-source: docker.io/kubeflownotebookswg/poddefaults-webhook
 provides:
   pod-defaults:
     interface: pod-defaults
