@@ -4,3 +4,6 @@ build/
 .tox/
 __pycache__
 .idea
+venv/
+.terraform*
+*.tfstate*
