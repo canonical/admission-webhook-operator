@@ -9,5 +9,7 @@ output "provides" {
 }
 
 output "requires" {
-  value = {}
+  value = {
+    "logging" = "logging",
+  }
 }
