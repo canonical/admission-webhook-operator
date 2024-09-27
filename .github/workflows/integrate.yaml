@@ -42,7 +42,14 @@ jobs:
 
     - name: Run unit tests
       run: tox -e unit
-  
+
+  terraform-checks:
+    name: Terraform
+    uses: canonical/charmed-kubeflow-workflows/.github/workflows/terraform-checks.yaml@main
+    with:
+      charm-path: .
+      channel: 1.9/stable
+
   integration:
     name: Integration Tests
     runs-on: ubuntu-20.04
