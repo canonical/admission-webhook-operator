@@ -74,7 +74,7 @@ jobs:
       uses: charmed-kubernetes/actions-operator@main
       with:
         provider: microk8s
-        channel: 1.31-strict/stable
+        channel: 1.32-strict/stable
         charmcraft-channel: 3.x/stable
         juju-channel: 3.6/stable
 
