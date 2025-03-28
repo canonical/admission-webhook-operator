@@ -16,7 +16,7 @@ resources:
     type: oci-image
     description: Backing OCI image
     auto-fetch: true
-    upstream-source: charmedkubeflow/admission-webhook:1.10.0-rc.1-273516f
+    upstream-source: charmedkubeflow/admission-webhook:1.10.0-8dd1032
 provides:
   pod-defaults:
     interface: pod-defaults
