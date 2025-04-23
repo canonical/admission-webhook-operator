@@ -57,7 +57,6 @@ jobs:
     uses: canonical/charmed-kubeflow-workflows/.github/workflows/terraform-checks.yaml@kf-7263-default-channel-testing
     with:
       charm-path: .
-      channel: latest/edge
 
   integration:
     name: Integration Tests
