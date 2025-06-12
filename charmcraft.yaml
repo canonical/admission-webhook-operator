@@ -1,15 +1,29 @@
-# Copyright 2023 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 type: charm
-bases:
-  - build-on:
-    - name: "ubuntu"
-      channel: "20.04"
-    run-on:
-    - name: "ubuntu"
-      channel: "20.04"
+platforms:
+  ubuntu@24.04:amd64:
+
 parts:
-  charm:
-    charm-python-packages: [setuptools, pip]  # Fixes install of some packages
-    build-packages: [cargo, rustc, pkg-config, libffi-dev, libssl-dev]
+  python-deps:
+    plugin: nil
+    override-build:
+      python3 -m pip install --user --break-system-packages --upgrade pip==24.3.1  # renovate: charmcraft-pip-latest
+      
+  charm-python:
+    plugin: python
+    source: .
+    after:
+      - python-deps
+    python-requirements: [requirements.txt]
+    # Needed to build Python dependencies with Rust from source
+    build-packages: [cargo, libffi-dev, libssl-dev, pkg-config, rustc]
+
+  files:
+    plugin: dump
+    source: .
+    stage:
+      - LICENSE
+      # For easier debugging
+      - requirements.txt
