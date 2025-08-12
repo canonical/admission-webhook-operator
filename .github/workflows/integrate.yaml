@@ -56,12 +56,15 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Setup operator environment
-      uses: charmed-kubernetes/actions-operator@main
-      with:
-        provider: microk8s
-        channel: 1.32-strict/stable
-        charmcraft-channel: 3.x/stable
-        juju-channel: 3.6/stable
+      run: |
+        concierge prepare -p k8s
+    # - name: Setup operator environment
+    #   uses: charmed-kubernetes/actions-operator@main
+    #   with:
+    #     provider: microk8s
+    #     channel: 1.32-strict/stable
+    #     charmcraft-channel: 3.x/stable
+    #     juju-channel: 3.6/stable
 
     - name: Test
       run: |
