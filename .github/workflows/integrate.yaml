@@ -57,6 +57,7 @@ jobs:
 
     - name: Setup operator environment
       run: |
+        pipx install tox
         sudo apt-get remove -y docker-ce docker-ce-cli containerd.io
         sudo rm -rf /run/containerd
         sudo snap install concierge --classic
