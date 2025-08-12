@@ -58,7 +58,7 @@ jobs:
     - name: Setup operator environment
       run: |
         snap install concierge --classic
-        concierge prepare -p k8s
+        sudo concierge prepare -p k8s
     # - name: Setup operator environment
     #   uses: charmed-kubernetes/actions-operator@main
     #   with:
