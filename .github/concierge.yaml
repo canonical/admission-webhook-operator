@@ -1,0 +1,13 @@
+juju:
+  channel: 3.6/stable
+
+providers:
+  k8s:
+    enable: true
+    bootstrap: true
+    channel: 1.32-classic/stable
+
+host:
+  snaps:
+    charmcraft:
+      channel: 3.x/stable
