@@ -8,6 +8,8 @@ providers:
     channel: 1.32-classic/stable
     features:
       local-storage:
+    bootstrap-constraints:
+      root-disk: 2G
 
   lxd:
     enable: true
