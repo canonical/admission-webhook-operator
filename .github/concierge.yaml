@@ -1,5 +1,5 @@
 juju:
-  channel: 3.6/stable
+  channel: 3.5/stable
 
 providers:
   k8s:
