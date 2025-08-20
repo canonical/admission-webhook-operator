@@ -93,3 +93,8 @@ jobs:
     - name: Get application operator logs
       run: kubectl logs -n testing --tail 1000 -ljuju-operator=admission-webhook
       if: failure()
+
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
+      if: failure()
+      timeout-minutes: 40
