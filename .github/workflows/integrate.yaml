@@ -63,7 +63,7 @@ jobs:
         sudo apt-get remove -y docker-ce docker-ce-cli containerd.io
         sudo rm -rf /run/containerd
         sudo snap install concierge --classic
-        sudo concierge prepare -c .github/concierge.yaml --trace
+        sudo concierge prepare -c concierge.yaml --trace
 
     - name: Test
       run: |
