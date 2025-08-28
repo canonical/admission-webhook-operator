@@ -1,7 +1,5 @@
 juju:
   channel: 3.6/stable
-  model-defaults:
-    logging-config: <root>=INFO; unit=DEBUG
 
 providers:
   k8s:
@@ -10,9 +8,12 @@ providers:
     channel: 1.32-classic/stable
     features:
       local-storage:
+      load-balancer:
         enabled: true
+        l2-mode: true
+        cidrs: 10.64.140.43/32
     bootstrap-constraints:
-      root-disk: 2G
+      root-disk: 4G
 
   lxd:
     enable: true
