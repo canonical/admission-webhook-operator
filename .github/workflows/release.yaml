@@ -25,3 +25,4 @@ jobs:
           destination-channel: ${{ github.event.inputs.destination-channel }}
           origin-channel: ${{ github.event.inputs.origin-channel }}
           base-channel: "24.04"
+          base-channel: "24.04"
