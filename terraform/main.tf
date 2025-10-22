@@ -2,6 +2,7 @@ resource "juju_application" "admission_webhook" {
   charm {
     name     = "admission-webhook"
         base     = var.base
+        base     = var.base
     channel  = var.channel
     revision = var.revision
   }
