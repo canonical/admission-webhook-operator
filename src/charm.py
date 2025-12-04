@@ -32,8 +32,6 @@ CRD_RESOURCE_FILES = [
     "src/templates/crds.yaml.j2",
 ]
 
-CONTAINER_CERTS_DEST = Path("/etc/webhook/certs")
-
 
 class AdmissionWebhookCharm(CharmBase):
     """A Juju Charm for Admission Webhook Operator."""
@@ -47,6 +45,8 @@ class AdmissionWebhookCharm(CharmBase):
         # retrieve configuration and base settings
         self.logger = logging.getLogger(__name__)
         self._container_name = "admission-webhook"
+        self._certs_storage_name = "certs"
+        self._container_meta = self.meta.containers[self._container_name]
         self._container = self.unit.get_container(self._container_name)
         self._port = self.model.config["port"]
         self._lightkube_field_manager = "lightkube"
@@ -233,6 +233,7 @@ class AdmissionWebhookCharm(CharmBase):
 
     def _upload_certs_to_container(self, event):
         """Upload generated certs to container."""
+        certs_storage_path = Path(self._container_meta.mounts[self._certs_storage_name].location)
         try:
             self._check_container_connection(self.container)
         except ErrorWithStatus as error:
@@ -240,10 +241,8 @@ class AdmissionWebhookCharm(CharmBase):
             raise error
         if not self._certificate_files_exist():
             try:
-                self.container.push(
-                    CONTAINER_CERTS_DEST / "key.pem", self._cert_key, make_dirs=True
-                )
-                self.container.push(CONTAINER_CERTS_DEST / "cert.pem", self._cert, make_dirs=True)
+                self.container.push(certs_storage_path / "key.pem", self._cert_key, make_dirs=True)
+                self.container.push(certs_storage_path / "cert.pem", self._cert, make_dirs=True)
             except PathError as e:
                 raise GenericCharmRuntimeError("Failed to push certs to container") from e
 
@@ -318,9 +317,10 @@ class AdmissionWebhookCharm(CharmBase):
 
     def _certificate_files_exist(self) -> bool:
         """Check that the certificate and key files can be pulled from the container."""
+        certs_storage_path = Path(self._container_meta.mounts[self._certs_storage_name].location)
         try:
-            self.container.pull(CONTAINER_CERTS_DEST / "key.pem")
-            self.container.pull(CONTAINER_CERTS_DEST / "cert.pem")
+            self.container.pull(certs_storage_path / "key.pem")
+            self.container.pull(certs_storage_path / "cert.pem")
             return True
         except PathError:
             return False
