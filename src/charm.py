@@ -241,11 +241,6 @@ class AdmissionWebhookCharm(CharmBase):
     def _upload_certs_to_container(self, event):
         """Upload generated certs to container."""
         certs_storage_path = Path(self._container_meta.mounts[self._certs_storage_name].location)
-        try:
-            self._check_container_connection(self.container)
-        except ErrorWithStatus as error:
-            self.logger.warning("Cannot upload certificates: Failed to connect with container")
-            raise error
         if not self._certificate_files_exist():
             try:
                 self.container.push(certs_storage_path / "key.pem", self._cert_key, make_dirs=True)

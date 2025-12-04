@@ -162,12 +162,11 @@ class TestCharm:
         """
         Checks that when the container is not reachable and install hook fires:
         * unit status is set to MaintenanceStatus('Pod startup is not complete').
-        * a warning is logged with "Cannot upload certificates: Failed to connect with container".
+        * a warning is logged with "Connection cannot be established with container".
         * update_layer is not called.
         """
         # Arrange
         harness.set_leader(True)
-        harness.add_storage("certs", attach=False)
         harness.set_can_connect("admission-webhook", False)
         harness.begin()
 
@@ -204,7 +203,6 @@ class TestCharm:
         # Arrange
         harness.set_leader(True)
         harness.set_can_connect("admission-webhook", True)
-        harness.add_storage("certs", attach=False)
         harness.begin()
 
         # Mock the logger
