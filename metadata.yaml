@@ -34,3 +34,4 @@ storage:
   certs:
     type: filesystem
     minimum-size: 1M
+    location: /etc/webhook/certs
