@@ -170,6 +170,13 @@ class AdmissionWebhookCharm(CharmBase):
             self.logger.info("Not a leader, skipping setup")
             raise ErrorWithStatus("Waiting for leadership", WaitingStatus)
 
+    def _check_storage(self):
+        """Check if storage is available."""
+        certs_storage_path = Path(self._container_meta.mounts[self._certs_storage_name].location)
+        if not self.container.exists(certs_storage_path):
+            self.logger.info("Storage not yet available")
+            raise ErrorWithStatus("Waiting for storage", WaitingStatus)
+
     def _check_and_report_k8s_conflict(self, error):
         """Return True if error status code is 409 (conflict), False otherwise."""
         if error.status.code == 409:
@@ -334,6 +341,8 @@ class AdmissionWebhookCharm(CharmBase):
         """
         try:
             self._check_leader()
+            self._check_container_connection(self.container)
+            self._check_storage()
             self._apply_k8s_resources(force_conflicts=force_conflicts)
             self._upload_certs_to_container(event)
             update_layer(

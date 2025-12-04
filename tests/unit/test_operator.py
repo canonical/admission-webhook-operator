@@ -72,6 +72,7 @@ class TestCharm:
             },
         )
 
+        harness.add_storage("certs", attach=True)
         harness.begin_with_initial_hooks()
         harness.container_pebble_ready("admission-webhook")
         assert harness.charm.model.unit.status == ActiveStatus("")
@@ -88,6 +89,7 @@ class TestCharm:
         """Test creation of Pebble layer. Only testing specific items."""
         harness.set_leader(True)
         harness.set_model_name("test_kubeflow")
+        harness.add_storage("certs", attach=True)
         harness.begin_with_initial_hooks()
         harness.container_pebble_ready("admission-webhook")
         pebble_plan = harness.get_container_pebble_plan("admission-webhook")
@@ -155,7 +157,7 @@ class TestCharm:
         mocked_update_layer,
         crd_resource_handler: MagicMock,
         k8s_resource_handler: MagicMock,
-        harness,
+        harness: Harness,
     ):
         """
         Checks that when the container is not reachable and install hook fires:
@@ -165,6 +167,7 @@ class TestCharm:
         """
         # Arrange
         harness.set_leader(True)
+        harness.add_storage("certs", attach=False)
         harness.set_can_connect("admission-webhook", False)
         harness.begin()
 
@@ -177,8 +180,42 @@ class TestCharm:
         # Assert
         assert harness.charm.model.unit.status == MaintenanceStatus("Pod startup is not complete")
         harness.charm.logger.warning.assert_called_with(
-            "Cannot upload certificates: Failed to connect with container"
+            "Connection cannot be established with container"
         )
+        mocked_update_layer.assert_not_called()
+
+    @patch("charm.KubernetesServicePatch", lambda x, y, service_name: None)
+    @patch("charm.AdmissionWebhookCharm.k8s_resource_handler")
+    @patch("charm.AdmissionWebhookCharm.crd_resource_handler")
+    @patch("charm.update_layer")
+    def test_storage_not_available_install(
+        self,
+        mocked_update_layer,
+        crd_resource_handler: MagicMock,
+        k8s_resource_handler: MagicMock,
+        harness: Harness,
+    ):
+        """
+        Checks that when the container is not reachable and install hook fires:
+        * unit status is set to MaintenanceStatus('Pod startup is not complete').
+        * a warning is logged with "Cannot upload certificates: Failed to connect with container".
+        * update_layer is not called.
+        """
+        # Arrange
+        harness.set_leader(True)
+        harness.set_can_connect("admission-webhook", True)
+        harness.add_storage("certs", attach=False)
+        harness.begin()
+
+        # Mock the logger
+        harness.charm.logger = MagicMock()
+
+        # Act
+        harness.charm.on.install.emit()
+
+        # Assert
+        assert harness.charm.model.unit.status == WaitingStatus("Waiting for storage")
+        harness.charm.logger.info.assert_called_with("Storage not yet available")
         mocked_update_layer.assert_not_called()
 
     @patch("charm.KubernetesServicePatch", lambda x, y, service_name: None)
