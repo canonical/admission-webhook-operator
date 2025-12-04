@@ -96,7 +96,10 @@ class TestCharm:
         assert pebble_plan
         assert pebble_plan._services
         pebble_plan_info = pebble_plan.to_dict()
-        assert pebble_plan_info["services"]["admission-webhook"]["command"] == "/webhook"
+        assert (
+            pebble_plan_info["services"]["admission-webhook"]["command"]
+            == "/webhook -tlsCertFile /etc/webhook/certs/cert.pem -tlsKeyFile /etc/webhook/certs/key.pem"  # noqa E501
+        )
 
     @patch("charm.KubernetesServicePatch", lambda x, y, service_name: None)
     @patch("charm.AdmissionWebhookCharm.k8s_resource_handler")
@@ -124,6 +127,7 @@ class TestCharm:
             (CheckStatus.UP, ActiveStatus("")),
             (CheckStatus.DOWN, MaintenanceStatus("Workload failed health check")),
         ],
+        ids=["charm-up-status-active", "charm-down-status-maintenance"],
     )
     def test_update_status(
         self,
@@ -139,6 +143,7 @@ class TestCharm:
         Check on the correct charm status when health check status is UP/DOWN.
         """
         harness.set_leader(True)
+        harness.add_storage("certs", attach=False)
         harness.begin_with_initial_hooks()
         harness.container_pebble_ready("admission-webhook")
 
@@ -239,6 +244,13 @@ class TestCharm:
                 },
                 False,
             ),
+        ],
+        ids=[
+            "no-data-should-refresh",
+            "missing-cert-should-refresh",
+            "missing-ca-should-refresh",
+            "missing-key-should-refresh",
+            "full-data-should-not-refresh",
         ],
     )
     def test_gen_certs_if_missing(

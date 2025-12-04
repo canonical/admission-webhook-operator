@@ -96,6 +96,11 @@ class AdmissionWebhookCharm(CharmBase):
         return self._container
 
     @property
+    def container_meta(self):
+        """Return container metadata."""
+        return self._container_meta
+
+    @property
     def k8s_resource_handler(self):
         """Update K8S with K8S resources."""
         if not self._k8s_resource_handler:
@@ -128,6 +133,10 @@ class AdmissionWebhookCharm(CharmBase):
     @property
     def _admission_webhook_layer(self) -> Layer:
         """Create and return Pebble framework layer."""
+        cert_path = (
+            Path(self.container_meta.mounts[self._certs_storage_name].location) / "cert.pem"
+        )
+        key_path = Path(self.container_meta.mounts[self._certs_storage_name].location) / "key.pem"
         layer_config = {
             "summary": "admission-webhook layer",
             "description": "Pebble config layer for admission-webhook-operator",
@@ -136,7 +145,7 @@ class AdmissionWebhookCharm(CharmBase):
                     "override": "replace",
                     "summary": "Pebble service for admission-webhook-operator",
                     "startup": "enabled",
-                    "command": self._exec_command,
+                    "command": f"{self._exec_command} -tlsCertFile {cert_path} -tlsKeyFile {key_path}",  # noqa E501
                     "on-check-failure": {"admission-webhook-up": "restart"},
                 },
             },
@@ -171,9 +180,12 @@ class AdmissionWebhookCharm(CharmBase):
             raise ErrorWithStatus("Waiting for leadership", WaitingStatus)
 
     def _check_storage(self):
-        """Check if storage is available."""
-        certs_storage_path = Path(self._container_meta.mounts[self._certs_storage_name].location)
-        if not self.container.exists(certs_storage_path):
+        """Check if storage is attached."""
+        try:
+            storage_path = Path(self.model.storages[self._certs_storage_name][0].location)
+            if not storage_path.exists():
+                raise FileNotFoundError
+        except (IndexError, FileNotFoundError):
             self.logger.info("Storage not yet available")
             raise ErrorWithStatus("Waiting for storage", WaitingStatus)
 
@@ -238,20 +250,16 @@ class AdmissionWebhookCharm(CharmBase):
         for k, v in certs.items():
             setattr(self._stored, k, v)
 
-    def _upload_certs_to_container(self, event):
-        """Upload generated certs to container."""
-        certs_storage_path = Path(self._container_meta.mounts[self._certs_storage_name].location)
-        try:
-            self._check_container_connection(self.container)
-        except ErrorWithStatus as error:
-            self.logger.warning("Cannot upload certificates: Failed to connect with container")
-            raise error
-        if not self._certificate_files_exist():
-            try:
-                self.container.push(certs_storage_path / "key.pem", self._cert_key, make_dirs=True)
-                self.container.push(certs_storage_path / "cert.pem", self._cert, make_dirs=True)
-            except PathError as e:
-                raise GenericCharmRuntimeError("Failed to push certs to container") from e
+    def _write_certs(self, _):
+        """Write generated certs to shared volume."""
+        certs_storage_path = Path(self.model.storages[self._certs_storage_name][0].location)
+        cert_path = certs_storage_path / "cert.pem"
+        key_path = certs_storage_path / "key.pem"
+        if not self._certificate_files_exist(cert_path, key_path):
+            cert_path.parent.mkdir(exist_ok=True, parents=True)
+            cert_path.write_text(self._cert)
+            key_path.parent.mkdir(exist_ok=True, parents=True)
+            key_path.write_text(self._cert_key)
 
     def _check_container_connection(self, container: Container) -> None:
         """Check if connection can be made with container.
@@ -322,14 +330,13 @@ class AdmissionWebhookCharm(CharmBase):
         except ErrorWithStatus as err:
             self.model.unit.status = err.status
 
-    def _certificate_files_exist(self) -> bool:
-        """Check that the certificate and key files can be pulled from the container."""
-        certs_storage_path = Path(self._container_meta.mounts[self._certs_storage_name].location)
+    def _certificate_files_exist(self, cert_path: Path, key_path: Path) -> bool:
+        """Check that the certificate and key files exist."""
         try:
-            self.container.pull(certs_storage_path / "key.pem")
-            self.container.pull(certs_storage_path / "cert.pem")
+            cert_path.read_text()
+            key_path.read_text()
             return True
-        except PathError:
+        except (FileNotFoundError, PathError):
             return False
 
     def _on_event(self, event, force_conflicts: bool = False) -> None:
@@ -344,7 +351,7 @@ class AdmissionWebhookCharm(CharmBase):
             self._check_container_connection(self.container)
             self._check_storage()
             self._apply_k8s_resources(force_conflicts=force_conflicts)
-            self._upload_certs_to_container(event)
+            self._write_certs(event)
             update_layer(
                 self._container_name,
                 self._container,
