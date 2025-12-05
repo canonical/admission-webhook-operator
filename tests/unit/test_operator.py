@@ -72,7 +72,7 @@ class TestCharm:
             },
         )
 
-        harness.add_storage("certs", attach=True)
+        harness.add_storage("certs")
         harness.begin_with_initial_hooks()
         harness.container_pebble_ready("admission-webhook")
         assert harness.charm.model.unit.status == ActiveStatus("")
@@ -89,7 +89,7 @@ class TestCharm:
         """Test creation of Pebble layer. Only testing specific items."""
         harness.set_leader(True)
         harness.set_model_name("test_kubeflow")
-        harness.add_storage("certs", attach=True)
+        harness.add_storage("certs")
         harness.begin_with_initial_hooks()
         harness.container_pebble_ready("admission-webhook")
         pebble_plan = harness.get_container_pebble_plan("admission-webhook")
