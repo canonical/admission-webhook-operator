@@ -58,6 +58,7 @@ class TestCharm:
 
     @patch("charm.KubernetesServicePatch", lambda x, y, service_name: None)
     @patch("charm.ServiceMeshConsumer")
+    @patch("charm.Client")
     @patch("charm.PolicyResourceManager")
     @patch("charm.AdmissionWebhookCharm.k8s_resource_handler")
     @patch("charm.AdmissionWebhookCharm.crd_resource_handler")
@@ -66,6 +67,7 @@ class TestCharm:
         crd_resource_handler: MagicMock,
         k8s_resource_handler: MagicMock,
         mock_policy_manager: MagicMock,
+        mock_client: MagicMock,
         mock_service_mesh: MagicMock,
         harness: Harness,
     ):
@@ -87,6 +89,7 @@ class TestCharm:
 
     @patch("charm.KubernetesServicePatch", lambda x, y, service_name: None)
     @patch("charm.ServiceMeshConsumer")
+    @patch("charm.Client")
     @patch("charm.PolicyResourceManager")
     @patch("charm.AdmissionWebhookCharm.k8s_resource_handler")
     @patch("charm.AdmissionWebhookCharm.crd_resource_handler")
@@ -95,6 +98,7 @@ class TestCharm:
         crd_resource_handler: MagicMock,
         k8s_resource_handler: MagicMock,
         mock_policy_manager: MagicMock,
+        mock_client: MagicMock,
         mock_service_mesh: MagicMock,
         harness: Harness,
     ):
@@ -286,9 +290,14 @@ class TestCharm:
 
     @patch("charm.KubernetesServicePatch", lambda x, y, service_name: None)
     @patch("charm.ServiceMeshConsumer")
+    @patch("charm.Client")
     @patch("charm.PolicyResourceManager")
     def test_reconcile_policy_resource_manager_with_mesh(
-        self, mock_policy_manager_class: MagicMock, mock_service_mesh: MagicMock, harness: Harness
+        self,
+        mock_policy_manager_class: MagicMock,
+        mock_client: MagicMock,
+        mock_service_mesh: MagicMock,
+        harness: Harness,
     ):
         """Test _reconcile_policy_resource_manager when mesh_type is available."""
         harness.begin()
@@ -310,9 +319,14 @@ class TestCharm:
 
     @patch("charm.KubernetesServicePatch", lambda x, y, service_name: None)
     @patch("charm.ServiceMeshConsumer")
+    @patch("charm.Client")
     @patch("charm.PolicyResourceManager")
     def test_reconcile_policy_resource_manager_without_mesh(
-        self, mock_policy_manager_class: MagicMock, mock_service_mesh: MagicMock, harness: Harness
+        self,
+        mock_policy_manager_class: MagicMock,
+        mock_client: MagicMock,
+        mock_service_mesh: MagicMock,
+        harness: Harness,
     ):
         """Test _reconcile_policy_resource_manager when mesh_type is None."""
         harness.begin()
@@ -332,9 +346,14 @@ class TestCharm:
 
     @patch("charm.KubernetesServicePatch", lambda x, y, service_name: None)
     @patch("charm.ServiceMeshConsumer")
+    @patch("charm.Client")
     @patch("charm.PolicyResourceManager")
     def test_remove_authorization_policies(
-        self, mock_policy_manager_class: MagicMock, mock_service_mesh: MagicMock, harness: Harness
+        self,
+        mock_policy_manager_class: MagicMock,
+        mock_client: MagicMock,
+        mock_service_mesh: MagicMock,
+        harness: Harness,
     ):
         """Test _remove_authorization_policies method."""
         harness.begin()
@@ -349,6 +368,7 @@ class TestCharm:
 
     @patch("charm.KubernetesServicePatch", lambda x, y, service_name: None)
     @patch("charm.ServiceMeshConsumer")
+    @patch("charm.Client")
     @patch("charm.PolicyResourceManager")
     @patch("charm.AdmissionWebhookCharm.k8s_resource_handler")
     @patch("charm.AdmissionWebhookCharm.crd_resource_handler")
@@ -357,6 +377,7 @@ class TestCharm:
         crd_resource_handler: MagicMock,
         k8s_resource_handler: MagicMock,
         mock_policy_manager_class: MagicMock,
+        mock_client: MagicMock,
         mock_service_mesh: MagicMock,
         harness: Harness,
     ):
@@ -378,9 +399,14 @@ class TestCharm:
 
     @patch("charm.KubernetesServicePatch", lambda x, y, service_name: None)
     @patch("charm.ServiceMeshConsumer")
+    @patch("charm.Client")
     @patch("charm.PolicyResourceManager")
     def test_service_mesh_relation_broken(
-        self, mock_policy_manager_class: MagicMock, mock_service_mesh: MagicMock, harness: Harness
+        self,
+        mock_policy_manager_class: MagicMock,
+        mock_client: MagicMock,
+        mock_service_mesh: MagicMock,
+        harness: Harness,
     ):
         """Test that service-mesh relation broken event removes authorization policies."""
         harness.begin()
