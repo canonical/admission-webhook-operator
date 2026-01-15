@@ -247,7 +247,7 @@ class AdmissionWebhookCharm(CharmBase):
         self.model.unit.status = MaintenanceStatus("K8S resources created")
 
     def _reconcile_policy_resource_manager(self):
-        if self._mesh.mesh_type:
+        if self._mesh._relation:
             self._policy_resource_manager.reconcile(
                 policies=[], mesh_type=self._mesh.mesh_type, raw_policies=[self._allow_all_policy]
             )
