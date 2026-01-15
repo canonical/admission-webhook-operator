@@ -10,9 +10,11 @@ from charmed_kubeflow_chisme.exceptions import ErrorWithStatus, GenericCharmRunt
 from charmed_kubeflow_chisme.kubernetes import KubernetesResourceHandler
 from charmed_kubeflow_chisme.lightkube.batch import delete_many
 from charmed_kubeflow_chisme.pebble import update_layer
+from charmed_kubeflow_chisme.service_mesh import generate_allow_all_authorization_policy
+from charms.istio_beacon_k8s.v0.service_mesh import PolicyResourceManager, ServiceMeshConsumer
 from charms.loki_k8s.v1.loki_push_api import LogForwarder
 from charms.observability_libs.v1.kubernetes_service_patch import KubernetesServicePatch
-from lightkube import ApiError
+from lightkube import ApiError, Client
 from lightkube.generic_resource import load_in_cluster_generic_resources
 from lightkube.models.core_v1 import ServicePort
 from ops.charm import CharmBase
@@ -69,6 +71,11 @@ class AdmissionWebhookCharm(CharmBase):
         self.framework.observe(self.on.remove, self._on_remove)
         self.framework.observe(self.on.update_status, self._on_update_status)
 
+        # setup event to handle removing authorization policies on relation broken
+        self.framework.observe(
+            self.on["service-mesh"].relation_broken, self._remove_authorization_policies
+        )
+
         # generate certs
         self._gen_certs_if_missing()
 
@@ -79,6 +86,14 @@ class AdmissionWebhookCharm(CharmBase):
             service_name=f"{self.model.app.name}",
         )
         self._logging = LogForwarder(charm=self)
+
+        self._mesh = ServiceMeshConsumer(self)
+
+        # Allow all policy needed to allow the K8s API to talk to the webhook
+        self._allow_all_policy = generate_allow_all_authorization_policy(
+            app_name=self.app.name,
+            namespace=self.model.name,
+        )
 
     @property
     def _context(self):
@@ -124,6 +139,19 @@ class AdmissionWebhookCharm(CharmBase):
             )
         load_in_cluster_generic_resources(self._crd_resource_handler.lightkube_client)
         return self._crd_resource_handler
+
+    @property
+    def _policy_resource_manager(self) -> PolicyResourceManager:
+        """Create and return PolicyResourceManager, used to manage authorization policies."""
+        return PolicyResourceManager(
+            charm=self,
+            lightkube_client=Client(field_manager=f"{self.app.name}-{self.model.name}"),
+            labels={
+                "app.kubernetes.io/instance": f"{self.app.name}-{self.model.name}",
+                "kubernetes-resource-handler-scope": f"{self.app.name}-allow-all",
+            },
+            logger=self.logger,
+        )
 
     @property
     def _admission_webhook_layer(self) -> Layer:
@@ -218,6 +246,15 @@ class AdmissionWebhookCharm(CharmBase):
                 raise GenericCharmRuntimeError("CRD resources creation failed") from error
         self.model.unit.status = MaintenanceStatus("K8S resources created")
 
+    def _reconcile_policy_resource_manager(self):
+        if self._mesh.mesh_type:
+            self._policy_resource_manager.reconcile(
+                policies=[], mesh_type=self._mesh.mesh_type, raw_policies=[self._allow_all_policy]
+            )
+
+    def _remove_authorization_policies(self, _):
+        self._policy_resource_manager.delete()
+
     def _gen_certs_if_missing(self):
         """Generate certificates if they don't already exist in _stored."""
         self.logger.info("Generating certificates if missing.")
@@ -303,6 +340,8 @@ class AdmissionWebhookCharm(CharmBase):
         if delete_error is not None:
             raise delete_error
 
+        self._remove_authorization_policies(_)
+
         self.unit.status = MaintenanceStatus("K8S resources removed")
 
     def _on_upgrade(self, _):
@@ -339,6 +378,7 @@ class AdmissionWebhookCharm(CharmBase):
             self._check_container_connection(self.container)
             self._check_storage()
             self._apply_k8s_resources(force_conflicts=force_conflicts)
+            self._reconcile_policy_resource_manager()
             self._upload_certs_to_container(event)
             update_layer(
                 self._container_name,

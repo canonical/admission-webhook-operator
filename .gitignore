@@ -1,4 +1,5 @@
 .coverage
+coverage.*
 *.charm
 build/
 .tox/
@@ -7,3 +8,4 @@ __pycache__
 venv/
 .terraform*
 *.tfstate*
+.vscode/
