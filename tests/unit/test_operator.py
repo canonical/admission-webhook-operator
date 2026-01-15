@@ -299,12 +299,13 @@ class TestCharm:
         mock_service_mesh: MagicMock,
         harness: Harness,
     ):
-        """Test _reconcile_policy_resource_manager when mesh_type is available."""
+        """Test _reconcile_policy_resource_manager when service-mesh relation is present."""
         harness.begin()
         harness.set_leader(True)
 
-        # Mock mesh_type property
+        # Mock _relation property to indicate a relation exists
         mock_mesh_instance = mock_service_mesh.return_value
+        mock_mesh_instance._relation = MagicMock()  # Relation exists
         mock_mesh_instance.mesh_type = "istio"
 
         # Mock the policy resource manager instance
@@ -328,20 +329,20 @@ class TestCharm:
         mock_service_mesh: MagicMock,
         harness: Harness,
     ):
-        """Test _reconcile_policy_resource_manager when mesh_type is None."""
+        """Test _reconcile_policy_resource_manager when service-mesh relation is not present."""
         harness.begin()
         harness.set_leader(True)
 
-        # Mock mesh_type property to return None
+        # Mock _relation property to return None (no relation established)
         mock_mesh_instance = mock_service_mesh.return_value
-        mock_mesh_instance.mesh_type = None
+        mock_mesh_instance._relation = None
 
         # Mock the policy resource manager instance
         mock_policy_manager = mock_policy_manager_class.return_value
 
         harness.charm._reconcile_policy_resource_manager()
 
-        # Verify reconcile was NOT called when mesh_type is None
+        # Verify reconcile was NOT called when there's no service-mesh relation
         mock_policy_manager.reconcile.assert_not_called()
 
     @patch("charm.KubernetesServicePatch", lambda x, y, service_name: None)
