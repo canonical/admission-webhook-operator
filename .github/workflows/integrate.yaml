@@ -51,6 +51,10 @@ jobs:
   integration:
     name: Integration Tests
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        test-type: [integration, integration-ambient]
     steps:
     - name: Check out code
       uses: actions/checkout@v4
@@ -67,7 +71,7 @@ jobs:
 
     - name: Test
       run: |
-        tox -vve integration -- --model testing
+        tox -vve ${{ matrix.test-type }} -- --model testing
 
     # On failure, capture debugging resources
     - name: Get all
