@@ -34,6 +34,8 @@ CRD_RESOURCE_FILES = [
     "src/templates/crds.yaml.j2",
 ]
 
+SERVICE_MESH_RELATION_NAME = "service-mesh"
+
 
 class AdmissionWebhookCharm(CharmBase):
     """A Juju Charm for Admission Webhook Operator."""
@@ -64,6 +66,7 @@ class AdmissionWebhookCharm(CharmBase):
             self.on.install,
             self.on.config_changed,
             self.on.admission_webhook_pebble_ready,
+            self.on[SERVICE_MESH_RELATION_NAME].relation_changed,
         ]:
             self.framework.observe(event, self._on_event)
         # setup events to be handled by specific event handlers
@@ -73,7 +76,8 @@ class AdmissionWebhookCharm(CharmBase):
 
         # setup event to handle removing authorization policies on relation broken
         self.framework.observe(
-            self.on["service-mesh"].relation_broken, self._remove_authorization_policies
+            self.on[SERVICE_MESH_RELATION_NAME].relation_broken,
+            self._remove_authorization_policies,
         )
 
         # generate certs
