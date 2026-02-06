@@ -157,6 +157,9 @@ class TestCharm:
         Check on the correct charm status when health check status is UP/DOWN.
         """
         harness.set_leader(True)
+        # Mock _relation property to return None (no relation established)
+        mock_mesh_instance = mock_service_mesh.return_value
+        mock_mesh_instance._relation = None
         harness.begin_with_initial_hooks()
         harness.container_pebble_ready("admission-webhook")
 
