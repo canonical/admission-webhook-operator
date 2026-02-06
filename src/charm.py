@@ -34,6 +34,8 @@ CRD_RESOURCE_FILES = [
     "src/templates/crds.yaml.j2",
 ]
 
+CONTAINER_CERTS_DEST = Path("/etc/webhook/certs")
+
 SERVICE_MESH_RELATION_NAME = "service-mesh"
 
 
@@ -49,8 +51,6 @@ class AdmissionWebhookCharm(CharmBase):
         # retrieve configuration and base settings
         self.logger = logging.getLogger(__name__)
         self._container_name = "admission-webhook"
-        self._certs_storage_name = "certs"
-        self._container_meta = self.meta.containers[self._container_name]
         self._container = self.unit.get_container(self._container_name)
         self._port = self.model.config["port"]
         self._lightkube_field_manager = "lightkube"
@@ -202,13 +202,6 @@ class AdmissionWebhookCharm(CharmBase):
             self.logger.info("Not a leader, skipping setup")
             raise ErrorWithStatus("Waiting for leadership", WaitingStatus)
 
-    def _check_storage(self):
-        """Check if storage is available."""
-        certs_storage_path = Path(self._container_meta.mounts[self._certs_storage_name].location)
-        if not self.container.exists(certs_storage_path):
-            self.logger.info("Storage not yet available")
-            raise ErrorWithStatus("Waiting for storage", WaitingStatus)
-
     def _check_and_report_k8s_conflict(self, error):
         """Return True if error status code is 409 (conflict), False otherwise."""
         if error.status.code == 409:
@@ -281,11 +274,12 @@ class AdmissionWebhookCharm(CharmBase):
 
     def _upload_certs_to_container(self, event):
         """Upload generated certs to container."""
-        certs_storage_path = Path(self._container_meta.mounts[self._certs_storage_name].location)
         if not self._certificate_files_exist():
             try:
-                self.container.push(certs_storage_path / "key.pem", self._cert_key, make_dirs=True)
-                self.container.push(certs_storage_path / "cert.pem", self._cert, make_dirs=True)
+                self.container.push(
+                    CONTAINER_CERTS_DEST / "key.pem", self._cert_key, make_dirs=True
+                )
+                self.container.push(CONTAINER_CERTS_DEST / "cert.pem", self._cert, make_dirs=True)
             except PathError as e:
                 raise GenericCharmRuntimeError("Failed to push certs to container") from e
 
@@ -362,10 +356,9 @@ class AdmissionWebhookCharm(CharmBase):
 
     def _certificate_files_exist(self) -> bool:
         """Check that the certificate and key files can be pulled from the container."""
-        certs_storage_path = Path(self._container_meta.mounts[self._certs_storage_name].location)
         try:
-            self.container.pull(certs_storage_path / "key.pem")
-            self.container.pull(certs_storage_path / "cert.pem")
+            self.container.pull(CONTAINER_CERTS_DEST / "key.pem")
+            self.container.pull(CONTAINER_CERTS_DEST / "cert.pem")
             return True
         except PathError:
             return False
@@ -380,7 +373,6 @@ class AdmissionWebhookCharm(CharmBase):
         try:
             self._check_leader()
             self._check_container_connection(self.container)
-            self._check_storage()
             self._apply_k8s_resources(force_conflicts=force_conflicts)
             self._reconcile_policy_resource_manager()
             self._upload_certs_to_container(event)
