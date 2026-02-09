@@ -13,15 +13,12 @@ containers:
     resource: oci-image
     uid: 584792
     gid: 584792
-    mounts:
-    - storage: certs
-      location: /etc/webhook/certs
 resources:
   oci-image:
     type: oci-image
     description: Backing OCI image
     auto-fetch: true
-    upstream-source: charmedkubeflow/admission-webhook:1.10.0-8dd1032
+    upstream-source: docker.io/charmedkubeflow/admission-webhook:1.10.0-e31a578
 provides:
   pod-defaults:
     interface: pod-defaults
@@ -30,7 +27,3 @@ requires:
     interface: loki_push_api
     optional: true
 charm-user: non-root
-storage:
-  certs:
-    type: filesystem
-    minimum-size: 1M
