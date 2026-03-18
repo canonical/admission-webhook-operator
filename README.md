@@ -8,6 +8,6 @@ This charm encompasses the Kubernetes Python operator for Kubeflow's Admission W
 
 To install the Admission Webhook, run:
 
-    juju deploy admission-webhook
+    juju deploy admission-webhook --trust
 
 For more information, see https://juju.is/docs
