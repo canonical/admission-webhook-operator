@@ -12,7 +12,7 @@ jobs:
 
   populate-labels:
     name: Populate labels
-    if: github.base_ref == 'main' && github.event.action = 'opened'
+    if: github.base_ref == 'main' && github.event.action == 'opened'
     uses: canonical/charmed-kubeflow-workflows/.github/workflows/populate-labels.yaml@main
     secrets: inherit
     with:
