@@ -6,7 +6,7 @@ This charm encompasses the Kubernetes Python operator for Kubeflow's Admission W
 
 ## Install
 
-To  install the Admission Webhook, run:
+To install the Admission Webhook, run:
 
     juju deploy admission-webhook --trust
 
