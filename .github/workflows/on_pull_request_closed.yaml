@@ -19,5 +19,5 @@ jobs:
   backport:
     name: Backport pull request
     if: github.event.pull_request.merged
-    uses: canonical/charmed-kubeflow-workflows/.github/workflows/backport-pr.yaml@main
+    uses: canonical/charmed-kubeflow-workflows/.github/workflows/backport-pr.yaml@kf-8712-workflows
     secrets: inherit
