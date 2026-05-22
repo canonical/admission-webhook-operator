@@ -21,10 +21,6 @@ on:
         description: Charmhub track determined from branch name
         value: ${{ jobs.get-charm-paths-track.outputs.track }}
 
-permissions:
-  actions: read
-  contents: read
-
 jobs:
   get-charm-paths-track:
     name: Get charm paths and track
@@ -98,6 +94,9 @@ jobs:
     with:
       path-to-charm-directory: ${{ matrix.charm }}
       cache: true
+    permissions:
+      actions: read  # Needed for GitHub API call to get workflow version (for private repositories)
+      contents: read
 
   release:
     strategy:
@@ -115,6 +114,9 @@ jobs:
       path-to-charm-directory: ${{ matrix.charm }}
     secrets:
       charmhub-token: ${{ secrets.CHARMCRAFT_CREDENTIALS }}
+    permissions:
+      actions: read  # Needed for GitHub API call to get workflow version (for private repositories)
+      contents: read
 
   integration:
     name: Integration tests

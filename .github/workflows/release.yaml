@@ -26,4 +26,5 @@ jobs:
     secrets:
       charmhub-token: ${{ secrets.CHARMCRAFT_CREDENTIALS }}
     permissions:
+      actions: read
       contents: write  # Needed to create git tags
