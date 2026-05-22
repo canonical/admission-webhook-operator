@@ -21,6 +21,10 @@ on:
         description: Charmhub track determined from branch name
         value: ${{ jobs.get-charm-paths-track.outputs.track }}
 
+permissions:
+  actions: read
+  contents: read
+
 jobs:
   get-charm-paths-track:
     name: Get charm paths and track
