@@ -34,7 +34,11 @@ CRD_RESOURCE_FILES = [
     "src/templates/crds.yaml.j2",
 ]
 
-CONTAINER_CERTS_DEST = Path("/etc/webhook/certs")
+# Rock certificate directory: uncomment this line and comment out the /tmp setting.
+# CONTAINER_CERTS_DEST = Path("/etc/webhook/certs")
+CONTAINER_CERTS_DEST = Path("/tmp/admission-webhook-certs")
+CONTAINER_CERT_PATH = CONTAINER_CERTS_DEST / "cert.pem"
+CONTAINER_KEY_PATH = CONTAINER_CERTS_DEST / "key.pem"
 
 SERVICE_MESH_RELATION_NAME = "service-mesh"
 
@@ -54,7 +58,12 @@ class AdmissionWebhookCharm(CharmBase):
         self._container = self.unit.get_container(self._container_name)
         self._port = self.model.config["port"]
         self._lightkube_field_manager = "lightkube"
-        self._exec_command = "/webhook"
+        # Rock command: uncomment this line and comment out the command with flags.
+        # self._exec_command = "/webhook"
+        self._exec_command = (
+            f"/webhook --tlsCertFile={CONTAINER_CERT_PATH} "
+            f"--tlsKeyFile={CONTAINER_KEY_PATH} --webhookPort={self._port}"
+        )
         self._namespace = self.model.name
         self._name = self.model.app.name
         self._service_name = self._name
@@ -276,10 +285,9 @@ class AdmissionWebhookCharm(CharmBase):
         """Upload generated certs to container."""
         if not self._certificate_files_exist():
             try:
-                self.container.push(
-                    CONTAINER_CERTS_DEST / "key.pem", self._cert_key, make_dirs=True
-                )
-                self.container.push(CONTAINER_CERTS_DEST / "cert.pem", self._cert, make_dirs=True)
+                self.container.make_dir(CONTAINER_CERTS_DEST, make_parents=True, permissions=0o700)
+                self.container.push(CONTAINER_KEY_PATH, self._cert_key, permissions=0o600)
+                self.container.push(CONTAINER_CERT_PATH, self._cert, permissions=0o600)
             except PathError as e:
                 raise GenericCharmRuntimeError("Failed to push certs to container") from e
 
@@ -357,9 +365,8 @@ class AdmissionWebhookCharm(CharmBase):
     def _certificate_files_exist(self) -> bool:
         """Check that the certificate and key files can be pulled from the container."""
         try:
-            self.container.pull(CONTAINER_CERTS_DEST / "key.pem")
-            self.container.pull(CONTAINER_CERTS_DEST / "cert.pem")
-            return True
+            with self.container.pull(CONTAINER_KEY_PATH), self.container.pull(CONTAINER_CERT_PATH):
+                return True
         except PathError:
             return False
 
