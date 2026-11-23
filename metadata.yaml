@@ -11,14 +11,22 @@ docs: https://discourse.charmhub.io/t/admission-webhook-index/8210
 containers:
   admission-webhook:
     resource: oci-image
-    uid: 584792
-    gid: 584792
+    # Rock identity: uncomment these lines and comment out the upstream UID/GID.
+    # uid: 584792
+    # gid: 584792
+    uid: 65532
+    gid: 65532
 resources:
   oci-image:
     type: oci-image
     description: Backing OCI image
     auto-fetch: true
+<<<<<<< HEAD
     upstream-source: docker.io/charmedkubeflow/admission-webhook:2.0.0-rc.0-653ced1-20261101050628
+=======
+    # When switching to the rock image, also restore the rock settings above and in src/charm.py.
+    upstream-source: ghcr.io/kubeflow/dashboard/poddefaults-webhook:v2.0.1
+>>>>>>> ce3f3a2 (chore: update admission webhook to v2.0.1 (#289))
 provides:
   pod-defaults:
     interface: pod-defaults

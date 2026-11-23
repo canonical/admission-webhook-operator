@@ -110,7 +110,12 @@ class TestCharm:
         assert pebble_plan
         assert pebble_plan._services
         pebble_plan_info = pebble_plan.to_dict()
-        assert pebble_plan_info["services"]["admission-webhook"]["command"] == "/webhook"
+        # Rock assertion: uncomment this line and remove the assertion with flags.
+        # assert pebble_plan_info["services"]["admission-webhook"]["command"] == "/webhook"
+        assert pebble_plan_info["services"]["admission-webhook"]["command"] == (
+            "/webhook --tlsCertFile=/tmp/admission-webhook-certs/cert.pem "
+            "--tlsKeyFile=/tmp/admission-webhook-certs/key.pem --webhookPort=4443"
+        )
 
     @patch("charm.KubernetesServicePatch", lambda x, y, service_name: None)
     @patch("charm.ServiceMeshConsumer")

@@ -1,4 +1,4 @@
-# Source: kubeflow/manifests/apps/admission-webhook/upstream/base/cluster-role.yaml
+# Source: https://github.com/kubeflow/dashboard/blob/v2.0.1/components/poddefaults-webhooks/manifests/kustomize/base/role.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -17,6 +17,7 @@ rules:
   - patch
   - delete
 ---
+# Source: https://github.com/kubeflow/dashboard/blob/v2.0.1/components/poddefaults-webhooks/manifests/kustomize/base/role_binding.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -30,6 +31,7 @@ subjects:
   name: {{ app_name }}
   namespace: {{ namespace }}
 ---
+# Source: https://github.com/kubeflow/dashboard/blob/v2.0.1/components/poddefaults-webhooks/manifests/kustomize/base/user_cluster_roles.yaml
 aggregationRule:
   clusterRoleSelectors:
   - matchLabels:
@@ -51,6 +53,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
+    rbac.authorization.kubeflow.org/aggregate-to-kubeflow-poddefaults-admin: "true"
     rbac.authorization.kubeflow.org/aggregate-to-kubeflow-edit: "true"
   name: admission-webhook-kubeflow-poddefaults-edit
 # Commenting out rules: [] due to https://github.com/gtsystem/lightkube/issues/32
@@ -60,7 +63,6 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
-    rbac.authorization.kubeflow.org/aggregate-to-kubeflow-poddefaults-admin: "true"
     rbac.authorization.kubeflow.org/aggregate-to-kubeflow-poddefaults-edit: "true"
     rbac.authorization.kubeflow.org/aggregate-to-kubeflow-view: "true"
   name: admission-webhook-kubeflow-poddefaults-view
