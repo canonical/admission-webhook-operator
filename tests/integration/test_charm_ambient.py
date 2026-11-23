@@ -14,9 +14,9 @@ from charmed_kubeflow_chisme.testing import (
     assert_logging,
     assert_security_context,
     deploy_and_assert_grafana_agent,
-    deploy_and_integrate_service_mesh_charms,
     generate_container_securitycontext_map,
     get_pod_names,
+    integrate_with_service_mesh,
 )
 from lightkube import ApiError, Client, codecs
 from lightkube.generic_resource import create_namespaced_resource
@@ -30,6 +30,7 @@ log = logging.getLogger(__name__)
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
 CONTAINERS_SECURITY_CONTEXT_MAP = generate_container_securitycontext_map(METADATA)
+ISTIO_CHANNEL = "1.31/stable"
 
 
 @pytest.mark.skip_if_deployed
@@ -62,8 +63,18 @@ async def test_build_and_deploy(ops_test: OpsTest, request):
         logging=True,
     )
 
-    # Deploy ambient service mesh charms and relate
-    await deploy_and_integrate_service_mesh_charms(
+    # Use the Juju CLI because libjuju does not support the Ubuntu 26.04 base.
+    for charm, options in (
+        ("istio-k8s", ("--config", "platform=")),
+        ("istio-ingress-k8s", ()),
+        ("istio-beacon-k8s", ("--config", "model-on-mesh=true")),
+    ):
+        await ops_test.juju(
+            "deploy", charm, "--channel", ISTIO_CHANNEL, "--trust", *options, check=True
+        )
+        await ops_test.model.wait_for_idle(apps=[charm], status="active", timeout=900)
+
+    await integrate_with_service_mesh(
         app=APP_NAME, model=ops_test.model, relate_to_ingress_route_endpoint=False
     )
 
